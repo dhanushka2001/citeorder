@@ -1,5 +1,10 @@
 name: C Unit Tests
 
+permissions:
+  contents: read
+  checks: write
+  id-token: write
+
 on:
   push:
     branches:
@@ -32,7 +37,3 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         with:
           report_paths: '**/results.xml'
-        permissions:
-          contents: read
-          checks: write
-          id-token: write
