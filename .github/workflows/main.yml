@@ -31,4 +31,4 @@ jobs:
       - name: Upload JUnit test results
         uses: actions/upload-test-results@v3
         with:
-          results_files: results.xml
+          report_paths: '**/results.xml'
