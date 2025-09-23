@@ -1,0 +1,39 @@
+name: C Unit Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'       # Ignore README.md changes
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout the repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Install GCC
+      - name: Install build essentials
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      # 3. Compile citeorder and the tests
+      - name: Build citeorder and test_citeorder
+        run: |
+          gcc -std=c11 -Wall -Wextra -O2 -o citeorder citeorder.c
+          gcc -std=c11 -Wall -Wextra -O2 -o test_citeorder test_citeorder.c
+
+      # 4. Run the tests
+      - name: Run unit tests
+        run: |
+          ./test_citeorder
+        continue-on-error: true  # Don't stop workflow if tests fail
+
+      # 5. Publish JUnit-style test results
+      - name: Upload test results
+        uses: mikeal/publish-junit-results@v1
+        with:
+          results_files: results.xml
