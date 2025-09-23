@@ -29,6 +29,6 @@ jobs:
         continue-on-error: true  # Don't stop workflow if tests fail
 
       - name: Upload JUnit test results
-        uses: actions/upload-test-results@v3
+        uses: mikepenz/action-junit-report@v5
         with:
           report_paths: '**/results.xml'
