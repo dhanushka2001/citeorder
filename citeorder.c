@@ -344,6 +344,12 @@ int main(int argc, char **argv) {
                         memcpy(p, newMarker, strlen(newMarker));
                     }
             	    fputs(lineCopy,out);
+
+		    // Ensure newline after every full-entry
+		    size_t len = strlen(lineCopy);
+                    if (len == 0 || lineCopy[len - 1] != '\n') {
+                        fputc('\n', out);
+                    }
             	    free(lineCopy);
 		}
 		i = end + 1;
