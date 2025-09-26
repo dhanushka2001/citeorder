@@ -196,7 +196,7 @@ void run_test_case(const char *test_name,
 
 // Example test cases
 int main() {
-    int total_tests = 5;
+    int total_tests = 7;
     junit = fopen("results.xml", "w");
     if (!junit) return 1;
     long headerPos = ftell(junit);
@@ -231,7 +231,21 @@ int main() {
                   NULL,                                     // expected stdout
                   "tests/expected/missing-full_stderr.txt"  // expected stderr
     );
-    // 5. Real example
+    // 5. Unused quote test
+    run_test_case("unused-quote",
+                  "tests/unused-quote.md",                  // input file
+                  "tests/expected/unused-quote-fixed.md",   // expected output file
+                  "tests/expected/unused-quote_stdout.txt", // expected stdout
+                  NULL                                      // expected stderr
+    );
+    // 6. Full-entry test
+    run_test_case("full-entry",
+                  "tests/full-entry.md",                    // input file
+                  "tests/expected/full-entry-fixed.md",     // expected output file
+                  "tests/expected/full-entry_stdout.txt",   // expected stdout
+                  NULL                                      // expected stderr
+    );
+    // 7. Real example
     run_test_case("test",
                   "tests/test.md",                          // input file
                   "tests/expected/test-fixed.md",           // expected output file
