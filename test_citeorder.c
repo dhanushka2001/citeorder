@@ -53,6 +53,19 @@ int run_citeorder(const char *inputFile, const char *outputFile,
     return system(cmd);
 }
 
+// Normalize line endings (strip \r)
+// ---------------------------------
+void normalize_line_endings(char *s) {
+    char *d = s;
+    while (*s) {
+        if (*s != '\r') {
+            *d++ = *s;
+        }
+        s++;
+    }
+    *d = '\0';
+}
+
 // Check if two files match
 // ------------------------
 bool files_match(const char *actual_file, const char *expected_file, bool ignore_path) {
@@ -70,6 +83,10 @@ bool files_match(const char *actual_file, const char *expected_file, bool ignore
     while (alen > 0 && (actual[alen-1] == '\n' || actual[alen-1] == '\r')) {
         actual[--alen] = '\0';
     }
+
+    normalize_line_endings(actual);
+    normalize_line_endings(expected);
+
 
     size_t elen = strlen(expected);
     while (elen > 0 && (expected[elen-1] == '\n' || expected[elen-1] == '\r')) {
