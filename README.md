@@ -85,7 +85,8 @@ Full-entry citations (``[^1]: Alice``) and in-text citations (``"Alice here",[^1
 ``citeorder`` handles cases like:
 
 * No changes needed.
-* Stacked in-text citations, e.g. ``"hello",[^3][^1]`` → ``"hello",[^1][^3]``.
+* Stacked in-text citations, e.g. ``"hello",[^3][^1]`` → ``"hello",[^1][^2]``.
+* Punctuation (or no punctuation) after the quote, e.g. ``Say "A"[^3] and "B",[^2]`` → ``Say "A"[^1] and "B",[^2]``
 * Missing numberings; ``citeorder`` will push all numbers above the missing number(s) down to fill the gap(s).
 * Full-entry citations with no matching in-text citations simply get bubbled to the top of the ordering.
 * Error handling for improper quote, e.g. ``"hello[^1]`` produces a warning message like: ``WARNING: in-text citation [^1] not properly quoted (line 5)``.
