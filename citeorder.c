@@ -239,17 +239,17 @@ int main(int argc, char **argv) {
 
     // Ensure unused fullEntries keep their oldNum
     // -------------------------------------------
-    int minLonelyFullEntry = 10000;
+    int numUnusedFullEntry = 0;
     for (int i = 0; i < fullCount; i++) {
 	if (fullEntries[i].newNum == 0) {
-	    if (fullEntries[i].oldNum < minLonelyFullEntry) {
-		minLonelyFullEntry = fullEntries[i].oldNum;
-	    }
+	    numUnusedFullEntry++;
 	}
     }
+    int k = 1;
     for (int j = 0; j < fullCount; j++) {
         if (fullEntries[j].newNum == 0) {
-            fullEntries[j].newNum = fullEntries[j].oldNum - (minLonelyFullEntry - inCount);
+            fullEntries[j].newNum = fullCount - numUnusedFullEntry + k;
+	    k++;
         }
     }
 
