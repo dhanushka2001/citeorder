@@ -67,7 +67,7 @@ will produce ``example-fixed.md``:
 [^2]: Bob
 [^3]: Charlie
 [^4]: Daniel
-[^7]: Gary
+[^6]: Gary
 
 Is "Ethan"[^5] here?
 
@@ -75,12 +75,12 @@ Is "Ethan"[^5] here?
 
 "Bob and Charlie here again"[^2][^3]
 
-[^10]: Fred
+[^7]: Fred
 ```
 
 The Markdown processor automatically reorders Footnotes when converting ``.md`` files, however, using ``citeorder`` will fix the ordering in the text file itself, making the file neater and easier to manage long lists of footnotes, especially useful when needing to add new footnotes in the middle of a long ``.md`` file and not having to reorder every in-text and full-entry citation manually.
 
-Full-entry citations (``[^1]: Alice``) and in-text citations (``"Alice here",[^1]``) are a one-to-many relationship. ``citeorder`` assumes the connections are correct and sorts them according to the order in which the in-text citations appear.
+Full-entry citations (``[^1]: Alice``) and in-text citations (``"Alice here",[^1]``) are a one-to-many relationship. ``citeorder`` assumes the connections are correct and **sorts them according to the order in which the in-text citations appear.**
 
 ``citeorder`` handles cases like:
 
@@ -88,7 +88,7 @@ Full-entry citations (``[^1]: Alice``) and in-text citations (``"Alice here",[^1
 * Stacked in-text citations, e.g. ``"hello",[^3][^1]`` → ``"hello",[^1][^3]``.
 * Missing numberings; ``citeorder`` will push all numbers above the missing number(s) down to fill the gap(s).
 * Full-entry citations with no matching in-text citations simply get bubbled to the top of the ordering.
-* Error handling for improper quote, e.g. ``"hello[^1]`` produces a warning message like ``WARNING: in-text citation [^1] not properly quoted (line 5)``.
+* Error handling for improper quote, e.g. ``"hello[^1]`` produces a warning message like: ``WARNING: in-text citation [^1] not properly quoted (line 5)``.
 * Error handling for duplicate full-entry citation numberings, e.g.
 
   ```md
@@ -96,4 +96,4 @@ Full-entry citations (``[^1]: Alice``) and in-text citations (``"Alice here",[^1
   [^4]: Bob
   ```
   
-  produces an error, like ``ERROR: duplicate [^4] full-entry citations (line 7 and 8)``.
+  produces an error, like: ``ERROR: duplicate [^4] full-entry citations (line 7 and 8)``.
