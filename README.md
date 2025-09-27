@@ -1,11 +1,22 @@
 # citeorder
-[![C Unit Tests](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml/badge.svg)](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml)
+[![Build and Test](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml/badge.svg)](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/dhanushka2001/citeorder)](https://github.com/dhanushka2001/citeorder/releases)
+[![GitHub License](https://img.shields.io/github/license/dhanushka2001/citeorder)](https://github.com/dhanushka2001/citeorder/blob/main/LICENSE)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/dhanushka2001/citeorder/total)](https://github.com/dhanushka2001/citeorder/releases)
+
+![C](https://img.shields.io/badge/C-%2300599C.svg?style=plastic&logo=c&logoColor=white)
+![Markdown](https://img.shields.io/badge/Markdown-%23000000.svg?style=plastic&logo=markdown&logoColor=white)
+
+<!--
+![C](https://img.shields.io/badge/c-%2300599C.svg?style=for-the-badge&logo=c&logoColor=white)
+![Markdown](https://img.shields.io/badge/markdown-%23000000.svg?style=for-the-badge&logo=markdown&logoColor=white)
+-->
 
 Simple command-line tool to correctly order Footnotes in Markdown files
 
 ## How to use
 
-1. On Windows, simply download the precompiled executable from the latest release
+1. On Windows, simply download the precompiled executable from the latest [release](https://github.com/dhanushka2001/citeorder/releases).
 
    If you want to compile the source code yourself, clone the repo and compile ``citeorder.c`` (including flags like ``-std=c11`` may cause errors):
 
