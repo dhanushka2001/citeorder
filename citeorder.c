@@ -19,7 +19,7 @@ typedef struct {
     int oldNum;
     int newNum;
     int lineIdx;
-    char *pos;       // pointer to start of citation in line
+    char *pos;       // pointer to start of citation in line '['
     FullEntry *ref;
 } InTextCitation;
 
@@ -45,71 +45,60 @@ static int findCitation(const char *line, const char **pos, int *num) {
 }
 
 // Check if citation is properly after quotes/punctuation
-static int hasProperQuoteContext(const char *line, int citeNum) {
+static int hasProperQuoteContext(char **lines, int lineNum, int citeNum) {
+    const char *line = lines[lineNum];
     char pattern[32];
     snprintf(pattern, sizeof(pattern), "[^%d]", citeNum);
 
     const char *p = strstr(line, pattern);
     if (!p) return 0;                 // citation not found
 
-    int cite_idx = (int)(p - line);   // index of '[' for this citation
+    int cite_idx = (int)(p - line);   // index of '[' for this exact unique citation [^citeNum]
 
-    // Scan left-to-right up to cite_idx to find matched quote spans.
-    int in_quote = 0;
-    // int open_idx = -1;
-    int last_close_idx = -1;
-    for (int i = 0; i < cite_idx; ++i) {
-        char c = line[i];
-        if (c == '"') {
-            if (!in_quote) {
-                in_quote = 1;
-                // open_idx = i;
-            } else {
-                // closing quote found
-                in_quote = 0;
-                last_close_idx = i;
-                // open_idx = -1;
-            }
-        }
-        // ignore other characters
+    // Scan right-to-left before cite_idx '[' to find matched quote spans.
+    // allow one or more stacked in-line citation markers [^123]
+    int j = 0;
+    while (line[cite_idx - 1 - 4*j] == ']') {
+	if (!isdigit((unsigned char)line[cite_idx - 1 - 4*j - 1])) return 0;
+	if (line[cite_idx - 1 - 4*j - 2] != '^') return 0;
+	if (line[cite_idx - 1 - 4*j - 3] != '[') return 0;
+	j++;
+	if (cite_idx - 1 - 4*j < 6) return 0;
     }
-
-    // If there is no matched closing quote before the citation, it's invalid.
-    if (last_close_idx < 0) return 0;
-
-    // Validate everything between last_close_idx+1 and cite_idx
-    int i = last_close_idx + 1;
-    while (i < cite_idx) {
-        unsigned char ch = (unsigned char) line[i];
-
-        // allow whitespace
-        // if (isspace(ch)) { i++; continue; }
-
-        // allow punctuation directly after a quote
-        if (ch == ',' || ch == '.' || ch == ';' || ch == ':' ||
-            ch == '?' || ch == '!' || ch == ')') { i++; continue; }
-
-        // allow one or more stacked in-line citation markers [^123]
-        if (ch == '[') {
-            // must look like [^digits]
-            if (i + 2 >= cite_idx) return 0; // not enough room for [^d]
-            if (line[i+1] != '^') return 0;
-            int j = i + 2;
-            if (!isdigit((unsigned char)line[j])) return 0;
-            while (j < cite_idx && isdigit((unsigned char)line[j])) j++;
-            if (j >= cite_idx) return 0;      // no closing ]
-            if (line[j] != ']') return 0;
-            // valid inline citation found; advance past it
-            i = j + 1;
-            continue;
-        }
-
-        // anything else (letters, other punctuation, stray '[' etc.) -> invalid
-        return 0;
+    // int start_quote = 0;
+    int end_quote = 0;
+    char c = line[cite_idx - 1 - 4*j];
+    if (c == '"') {
+	end_quote = cite_idx - 1 - 4*j;
     }
+    // allow punctuation directly after the end quote
+    if (c == ',' || c == '.' || c == ';' || c == ':' || c == '?' || c == '!' || c == ')') {
+	if (line[cite_idx - 1 - 4*j - 1] == '"') {
+	    end_quote = cite_idx - 1 - 4*j - 1;
+	}
+    }
+    
+    // If there is no closing quote before the citation, it's invalid.
+    if (end_quote == 0) return 0;
 
-    // Passed all checks
-    return 1;
+    // Scan right-to-left to before closing quote to find opening quote, must be before a previous in-text citation, could be in a line prior.
+    for (int i = 0; i < end_quote; i++) {
+        // check if hit a previous in-text citation before reaching a quote
+	if (i < end_quote - 3 && line[end_quote - i - 1] == ']') {
+	    if (isdigit((unsigned char)line[end_quote - i - 2]) &&
+		line[end_quote - i - 3] == '^' &&
+		line[end_quote - i - 4] == '[') {
+	        return 0;
+	    }
+	}
+	if (line[end_quote - i - 1] == '"') {
+	    return 1;
+	}
+    }
+    // did not find opening quote in the same line, could be in previous line
+    for (int i = 0; i < lineNum; i++) {
+	
+    return 0;
 }
 
 // Update in-text citations in a line, keeping stacked citations sorted
@@ -254,7 +243,7 @@ int main(int argc, char **argv) {
                 exit(1);
             }
 
-            if(!hasProperQuoteContext(lines[i], num)) {
+            if(!hasProperQuoteContext(lines, i, num)) {
                 fprintf(stderr,"WARNING: in-text citation [^%d] not properly quoted (line %d)\n", num, i+1);
                 exit(1);
             }
