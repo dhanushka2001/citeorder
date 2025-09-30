@@ -63,7 +63,8 @@ static int hasProperQuoteContext(char **lines, int lineNum, int citeNum) {
 	if (line[cite_idx - 1 - 4*j - 2] != '^') return 0;
 	if (line[cite_idx - 1 - 4*j - 3] != '[') return 0;
 	j++;
-	if (cite_idx - 1 - 4*j < 6) return 0;
+	if (cite_idx - 1 - 4*j < 2) return 0; // if less than 2 chars, then no space for quote and 1 char
+	
     }
     // int start_quote = 0;
     int end_quote = 0;
