@@ -96,7 +96,7 @@ static int hasProperQuoteContext(char **lines, int lineNum, int citeNum) {
 	}
     }
     // did not find opening quote in the same line, could be in previous line
-    for (int i = 0; i < lineNum; i++) {
+    //for (int i = 0; i < lineNum; i++) {
 	
     return 0;
 }
