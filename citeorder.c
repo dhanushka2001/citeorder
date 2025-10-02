@@ -58,7 +58,7 @@ int isInsideInlineCode(const char *line, const char *pos, const char *end) {
 }
 
 // Find next citation in a line
-static int findCitation(const char *line, const char **pos, int *num) {
+int findCitation(const char *line, const char **pos, int *num) {
     const char *p;
     if (!pos || *pos == NULL)
         p = strstr(line, "[^"); // find first occurrence of '[^' starting from beginning of line
@@ -102,7 +102,7 @@ int backScanForQuote(const char *line, int pos) {
 }
 
 // Check if citation is properly after quotes/punctuation
-static int hasProperQuoteContext(const char **lines, int lineNum, int citeNum) {
+int hasProperQuoteContext(const char **lines, int lineNum, int citeNum) {
     const char *line = lines[lineNum];
     char pattern[32];
     snprintf(pattern, sizeof(pattern), "[^%d]", citeNum);
@@ -234,11 +234,34 @@ void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lin
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) { 
-        fprintf(stderr,"citeorder: missing operand\nUsage: '%s input.md'\n", argv[0]); return 1; }
+    int relaxedQuotes = 0;
+    const char *filename = NULL;
 
-    FILE *f = fopen(argv[1], "r");
-    if (!f) { perror("fopen"); return 1; }
+    if (argc < 2) { 
+	fprintf(stderr,
+		"citeorder: missing operand\nUsage: '%s [-r|--relaxed-quotes] input.md'\n",
+		argv[0]);
+	return 1;
+    }
+
+    for (int i = 1; i < argc; i++) {
+	if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--relaxed-quotes") == 0) {
+	    relaxedQuotes = 1;
+	} else {
+	    filename = argv[i];
+	}
+    }
+
+
+    FILE *f = fopen(filename, "r");
+    if (!f) { 
+	// perror("fopen");
+	fprintf(stderr,
+		"citeorder: file '%s' does not exist\nUsage: '%s [-r|--relaxed-quotes] input.md'\n",
+		filename,
+		argv[0]);
+	return 1;
+    }
 
     const char *lines[MAX_LINES]; // "lines" is a pointer to an array of const char pointers
     int lineCount=0;
@@ -300,10 +323,11 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"ERROR: in-text citation [^%d] without full-entry (line %d)\n", num, i+1);
                 exit(1);
             }
-
-            if(!hasProperQuoteContext(lines, i, num)) {
-                fprintf(stderr,"WARNING: in-text citation [^%d] not properly quoted (line %d)\n", num, i+1);
-                exit(1);
+	    if (!relaxedQuotes) {
+                if(!hasProperQuoteContext(lines, i, num)) {
+                    fprintf(stderr,"WARNING: in-text citation [^%d] not properly quoted (line %d)\n", num, i+1);
+                    exit(1);
+		}
             }
 
             // assign a new number if not already assigned
@@ -356,7 +380,7 @@ int main(int argc, char **argv) {
     if (changed) {
         char outName[512];
         char base[256];
-        strncpy(base, argv[1], sizeof(base));
+        strncpy(base, filename, sizeof(base));
         base[sizeof(base)-1]='\0';
         char *dot = strrchr(base, '.');
         if(dot && strcmp(dot,".md")==0) *dot='\0';
