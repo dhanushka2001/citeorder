@@ -37,18 +37,16 @@ char* read_file(const char *filename) {
 
 // Helper to run citeorder and capture output
 // ------------------------------------------
-int run_citeorder(const char *inputFile, const char *outputFile,
-		  const char *stdoutFile, const char *stderrFile)
-{
+int run_citeorder(const char *inputFile, const char *stdoutFile, const char *stderrFile) {
     char cmd[512];
 #ifdef _WIN32
     snprintf(cmd, sizeof(cmd),
-	     "citeorder.exe \"%s\" \"%s\" 1>\"%s\" 2>\"%s\"",
-	     inputFile, outputFile, stdoutFile, stderrFile);
+	     "citeorder.exe \"%s\" 1>\"%s\" 2>\"%s\"",
+	     inputFile, stdoutFile, stderrFile);
 #else
     snprintf(cmd, sizeof(cmd),
-	     "./citeorder \"%s\" \"%s\" 1>\"%s\" 2>\"%s\"",
-	     inputFile, outputFile, stdoutFile, stderrFile);
+	     "./citeorder \"%s\" 1>\"%s\" 2>\"%s\"",
+	     inputFile, stdoutFile, stderrFile);
 #endif
     return system(cmd);
 }
@@ -162,7 +160,7 @@ void run_test_case(const char *test_name,
     snprintf(outStd,  sizeof(outStd),  "%s%s_stdout.txt", outDir, test_name);
     snprintf(outErr,  sizeof(outErr),  "%s%s_stderr.txt", outDir, test_name);
 
-    int ret = run_citeorder(inputFile, outFile, outStd, outErr);
+    int ret = run_citeorder(inputFile, outStd, outErr);
     if (ret != 0) {
         printf("citeorder returned non-zero exit code: %d\n", ret);
     }
