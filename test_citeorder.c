@@ -213,7 +213,7 @@ void run_test_case(const char *test_name,
 
 // Example test cases
 int main() {
-    int total_tests = 7;
+    int total_tests = 8;
     junit = fopen("results.xml", "w");
     if (!junit) return 1;
     long headerPos = ftell(junit);
@@ -262,7 +262,14 @@ int main() {
                   "tests/expected/full-entry_stdout.txt",   // expected stdout
                   NULL                                      // expected stderr
     );
-    // 7. Real example
+    // 7. Inline-code test
+    run_test_case("inline-code",
+                  "tests/inline-code.md",                   // input file
+                  "tests/expected/inline-code-fixed.md",    // expected output file
+                  "tests/expected/inline-code_stdout.txt",  // expected stdout
+                  NULL                                      // expected stderr
+    );
+    // 8. Real example
     run_test_case("test",
                   "tests/test.md",                          // input file
                   "tests/expected/test-fixed.md",           // expected output file

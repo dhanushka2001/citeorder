@@ -7,4 +7,13 @@ example-fixed.md
 example2.md
 example2-fixed.md
 
+example3.md
+example3-fixed.md
+
+tests/full-entry-fixed.md
+tests/inline-code-fixed.md
+tests/stacked-fixed.md
+tests/test-fixed.md
+tests/unused-quote-fixed.md
+
 results.xml

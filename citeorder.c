@@ -23,25 +23,63 @@ typedef struct {
     FullEntry *ref;
 } InTextCitation;
 
+int isInsideInlineCode(const char *line, const char *pos, const char *end) {
+    bool inCode = 0;
+    int cite_idx = (int)(pos - line); // index of '[' for this citation [^citeNum]
+    // scan left-to-right from beginning of line to just before '[' in [^citeNum]
+    for (int i = 0; i < cite_idx - 1; i++) {
+	if (line[i] == '`' && line[i+1] == '`') {
+	    inCode = !inCode; // toggle
+	    i += 1; // skip next iteration
+	}
+    }
+    const char *p = strstr(end + 1, "``"); // find first occurrence of '``' after ']' in [^citeNum]
+    if (inCode && p) return 1;
+    else return 0;
+}
+
 // Find next citation in a line
 static int findCitation(const char *line, const char **pos, int *num) {
     const char *p;
     if (!pos || *pos == NULL)
-        p = strstr(line, "[^");
+        p = strstr(line, "[^"); // find first occurrence of '[^' starting from beginning of line
     else
-        p = strstr(*pos, "[^");
+        p = strstr(*pos, "[^"); // find first occurrence of '[^' start from given pos in line
 
     if (!p) return 0;
 
     char *end;
-    long n = strtol(p+2, &end, 10);
+    long n = strtol(p+2, &end, 10); // "p+2" skips past '[^'. "strol" reads as many digits as possible into n. "end" points to the first non-digit character
     if (end && *end == ']') {
-        *num = (int)n;
-        *pos = end + 1;
-        return 1;
+	if (isInsideInlineCode(line, p, end)) {
+	    return 0;
+	} else {
+            *num = (int)n;
+            *pos = end + 1; // found a citation, move pointer to after the ']'
+            return 1;
+	}
     }
-    *pos = p + 2;
+    *pos = p + 2; // did not find a citation, move pointer 2 spaces after '[^'
     return findCitation(line, pos, num);
+}
+
+// scan line right-to-left looking for a '"' or a ']'
+int backScanForQuote(const char *line, int pos) {
+    for (int i = pos - 1; i >= 0; i--) {
+        // check if hit a previous in-text citation before reaching a quote
+   	if (i > 2 && line[i] == ']') {
+   	    if (isdigit((unsigned char)line[i - 1]) &&
+		line[i - 2] == '^' &&
+   	    	line[i - 3] == '[') {
+   		return -2;
+   	    }
+   	}
+        if (line[i] == '"') {
+	   return i;
+        }
+    }
+    // did not find '"' or '[^n]' in line
+    return -1;
 }
 
 // Check if citation is properly after quotes/punctuation
@@ -64,7 +102,6 @@ static int hasProperQuoteContext(char **lines, int lineNum, int citeNum) {
 	if (line[cite_idx - 1 - 4*j - 3] != '[') return 0;
 	j++;
 	if (cite_idx - 1 - 4*j < 2) return 0; // if less than 2 chars, then no space for quote and 1 char
-	
     }
     // int start_quote = 0;
     int end_quote = 0;
@@ -83,22 +120,20 @@ static int hasProperQuoteContext(char **lines, int lineNum, int citeNum) {
     if (end_quote == 0) return 0;
 
     // Scan right-to-left to before closing quote to find opening quote, must be before a previous in-text citation, could be in a line prior.
-    for (int i = 0; i < end_quote; i++) {
-        // check if hit a previous in-text citation before reaching a quote
-	if (i < end_quote - 3 && line[end_quote - i - 1] == ']') {
-	    if (isdigit((unsigned char)line[end_quote - i - 2]) &&
-		line[end_quote - i - 3] == '^' &&
-		line[end_quote - i - 4] == '[') {
-	        return 0;
-	    }
-	}
-	if (line[end_quote - i - 1] == '"') {
-	    return 1;
-	}
-    }
+    int var = backScanForQuote(line, end_quote);
+    if (var == -2) return 0;
+    if (var >= 0) return 1;
+
+
     // did not find opening quote in the same line, could be in previous line
-    //for (int i = 0; i < lineNum; i++) {
-	
+    for (int i = 0; i < lineNum; i++) {
+	const char *pline = lines[lineNum - 1 - i];
+	size_t len = strlen(pline);
+	int var = backScanForQuote(pline, len);
+	if (var == -2) return 0;
+	if (var >= 0) return 1;
+    }
+    // could not find '"' in any of the lines
     return 0;
 }
 
