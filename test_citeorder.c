@@ -213,7 +213,7 @@ void run_test_case(const char *test_name,
 
 // Example test cases
 int main() {
-    int total_tests = 8;
+    int total_tests = 12;
     junit = fopen("results.xml", "w");
     if (!junit) return 1;
     long headerPos = ftell(junit);
@@ -222,7 +222,7 @@ int main() {
 
     // 1. No change required test
     run_test_case("no-change",
-        	  "tests/no-change.md", 		    // input file
+        	  "tests/no-change.md",                     // input file
         	  NULL,				            // expected output file
                   "tests/expected/no-change_stdout.txt",    // expected stdout
         	  NULL                                      // expected stderr
@@ -262,18 +262,46 @@ int main() {
                   "tests/expected/full-entry_stdout.txt",   // expected stdout
                   NULL                                      // expected stderr
     );
-    // 7. Inline-code test
+    // 7. Multiple punctuation test
+    run_test_case("multiple-punc",
+                  "tests/multiple-punc.md",                 // input file
+                  NULL,				            // expected output file
+                  NULL,					    // expected stdout
+                  "tests/expected/multiple-punc_stderr.txt"  // expected stderr
+    );
+    // 8. Separated stack test
+    run_test_case("separated-stack",
+                  "tests/separated-stack.md",               	// input file
+                  NULL,				            	// expected output file
+                  NULL,					    	// expected stdout
+                  "tests/expected/separated-stack_stderr.txt"   // expected stderr
+    );
+    // 9. Spaced quote test
+    run_test_case("spaced-quote",
+                  "tests/spaced-quote.md",                  // input file
+                  "tests/expected/spaced-quote-fixed.md",   // expected output file
+                  "tests/expected/spaced-quote_stdout.txt", // expected stdout
+                  NULL                                      // expected stderr
+    );
+    // 10. Inline-code test
     run_test_case("inline-code",
                   "tests/inline-code.md",                   // input file
                   "tests/expected/inline-code-fixed.md",    // expected output file
                   "tests/expected/inline-code_stdout.txt",  // expected stdout
                   NULL                                      // expected stderr
     );
-    // 8. Real example
-    run_test_case("test",
-                  "tests/test.md",                          // input file
-                  "tests/expected/test-fixed.md",           // expected output file
-                  "tests/expected/test_stdout.txt",         // expected stdout
+    // 11. Fenced code example
+    run_test_case("fenced-code",
+                  "tests/fenced-code.md",                   // input file
+                  "tests/expected/fenced-code-fixed.md",    // expected output file
+                  "tests/expected/fenced-code_stdout.txt",  // expected stdout
+                  NULL                                      // expected stderr
+    );
+    // 12. Real example
+    run_test_case("real-example",
+                  "tests/real-example.md",                  // input file
+                  "tests/expected/real-example-fixed.md",   // expected output file
+                  "tests/expected/real-example_stdout.txt", // expected stdout
                   NULL                                      // expected stderr
     );
 

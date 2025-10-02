@@ -12,7 +12,7 @@ typedef struct {
     int oldNum;
     int newNum;
     int lineIdx;
-    char *text;
+    const char *text;
 } FullEntry;
 
 typedef struct {
@@ -22,6 +22,25 @@ typedef struct {
     char *pos;       // pointer to start of citation in line '['
     FullEntry *ref;
 } InTextCitation;
+
+void markCodeBlocks(const char **lines, int lineCount, int *isCodeLine) {
+    int insideFence = 0;
+    for (int i = 0; i < lineCount; i++) {
+	const char *line = lines[i];
+
+	// skip leading spaces
+	while (*line && isspace((unsigned char)*line)) {
+	    line++;
+	}
+
+        if (strncmp(line, "```", 3) == 0) {
+            insideFence = !insideFence;
+            isCodeLine[i] = 1; // mark fence line as code
+        } else {
+            isCodeLine[i] = insideFence;
+        }	
+    }
+}
 
 int isInsideInlineCode(const char *line, const char *pos, const char *end) {
     bool inCode = 0;
@@ -83,7 +102,7 @@ int backScanForQuote(const char *line, int pos) {
 }
 
 // Check if citation is properly after quotes/punctuation
-static int hasProperQuoteContext(char **lines, int lineNum, int citeNum) {
+static int hasProperQuoteContext(const char **lines, int lineNum, int citeNum) {
     const char *line = lines[lineNum];
     char pattern[32];
     snprintf(pattern, sizeof(pattern), "[^%d]", citeNum);
@@ -221,7 +240,7 @@ int main(int argc, char **argv) {
     FILE *f = fopen(argv[1], "r");
     if (!f) { perror("fopen"); return 1; }
 
-    char *lines[MAX_LINES];
+    const char *lines[MAX_LINES]; // "lines" is a pointer to an array of const char pointers
     int lineCount=0;
     char buf[MAX_LINE_LEN];
 
@@ -231,6 +250,9 @@ int main(int argc, char **argv) {
     }
     fclose(f);
 
+    int isCodeLine[lineCount];
+    markCodeBlocks(lines, lineCount, isCodeLine);
+
     FullEntry fullEntries[MAX_ENTRIES];
     int fullCount = 0;
     InTextCitation inTexts[MAX_ENTRIES*2];
@@ -239,7 +261,7 @@ int main(int argc, char **argv) {
     // Collect full-entry citations
     // ----------------------------
     for(int i = 0; i < lineCount; i++){
-        if(strstr(lines[i], "]:")){
+        if(strstr(lines[i], "]:") && !isCodeLine[i]){
             const char *pos = NULL;
             int num;
             if(findCitation(lines[i], &pos, &num)){
@@ -264,7 +286,7 @@ int main(int argc, char **argv) {
     // -----------------------------------------------------------
     int nextNum = 1;
     for(int i=0;i<lineCount;i++){
-        if(strstr(lines[i], "]:")) continue; // skip full-entry lines
+        if(strstr(lines[i], "]:") || isCodeLine[i]) continue; // skip full-entry lines or code blocks
 
         const char *pos=NULL;
         int num;
