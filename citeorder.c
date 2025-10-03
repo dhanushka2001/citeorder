@@ -233,15 +233,53 @@ void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lin
     }
 }
 
+void print_version(void) {
+    printf("  citeorder 1.1 (GPL-3.0-or-later)\n");
+    printf("  Copyright (C) 2025 Dhanushka Jayagoda\n");
+#if defined(__clang__)
+    printf("  Built with clang %s\n", __clang_version__);
+#elif defined(__GNUC__)
+    printf("  Built with gcc %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#elif defined(_MSC_VER)
+    printf("  Built with MSVC %d\n", _MSC_VER);
+#else
+    printf("  Built with unknown compiler\n");
+#endif
+    printf("  Homepage: https://github.com/dhanushka2001/citeorder\n");
+}
+
+void print_help(void) {
+    printf("citeorder - reorder Markdown footnotes\n\n");
+    printf("Usage:\n");
+    printf("  citeorder [-r|--relaxed-quotes] input.md\n\n");
+    printf("Description:\n");
+    printf("  Processes a Markdown file and reorders its footnotes.\n");
+    printf("  The result is written to 'input-fixed.md'.\n\n");
+    printf("Options:\n");
+    printf("  -r, --relaxed-quotes   Allow relaxed handling of quotation marks\n");
+    printf("  -h, --help             Show this help message\n");
+    printf("  -v, --version          Show program version\n\n");
+    printf("Version:\n");
+    print_version();
+}
+
 int main(int argc, char **argv) {
     int relaxedQuotes = 0;
     const char *filename = NULL;
 
     if (argc < 2) { 
-	fprintf(stderr,
-		"citeorder: missing operand\nUsage: '%s [-r|--relaxed-quotes] input.md'\n",
-		argv[0]);
+	printf("citeorder: missing operand\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n");
 	return 1;
+    }
+
+    if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+        print_help();
+        return 0;
+    }
+
+    if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+        print_version();
+        return 0;
     }
 
     for (int i = 1; i < argc; i++) {
@@ -257,9 +295,8 @@ int main(int argc, char **argv) {
     if (!f) { 
 	// perror("fopen");
 	fprintf(stderr,
-		"citeorder: file '%s' does not exist\nUsage: '%s [-r|--relaxed-quotes] input.md'\n",
-		filename,
-		argv[0]);
+		"citeorder: file '%s' does not exist\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n",
+		filename);
 	return 1;
     }
 

@@ -17,5 +17,6 @@ tests/real-example-fixed.md
 tests/unused-quote-fixed.md
 tests/fenced-code-fixed.md
 tests/spaced-quote-fixed.md
+tests/relaxed-quotes-fixed.md
 
 results.xml
