@@ -2,7 +2,9 @@
 [![Build and Test](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml/badge.svg)](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/dhanushka2001/citeorder)](https://github.com/dhanushka2001/citeorder/releases)
 [![GitHub License](https://img.shields.io/github/license/dhanushka2001/citeorder)](https://github.com/dhanushka2001/citeorder/blob/main/LICENSE)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/dhanushka2001/citeorder)](https://github.com/dhanushka2001/citeorder/commits/main/)
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/dhanushka2001/citeorder/total)](https://github.com/dhanushka2001/citeorder/releases)
+[![GitHub Repo stars](https://img.shields.io/github/stars/dhanushka2001/citeorder)](https://github.com/dhanushka2001/citeorder/stargazers)
 
 ![C](https://img.shields.io/badge/C-%2300599C.svg?style=plastic&logo=c&logoColor=white)
 ![Markdown](https://img.shields.io/badge/Markdown-%23000000.svg?style=plastic&logo=markdown&logoColor=white)
