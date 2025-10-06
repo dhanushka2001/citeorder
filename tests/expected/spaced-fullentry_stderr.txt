@@ -1,0 +1,1 @@
+ERROR: [^3a ] full-entry citation contains a space (line 6)

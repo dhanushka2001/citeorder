@@ -1,5 +1,7 @@
 citeorder.exe
+citeorder
 test_citeorder.exe
+test_citeorder
 
 example.md
 example-fixed.md
@@ -10,13 +12,23 @@ example2-fixed.md
 example3.md
 example3-fixed.md
 
+test1.md
+test1-fixed.md
+
+test2.md
+test2-fixed.md
+
+issues.txt
+citeorder-1.1-linux/
+
 tests/full-entry-fixed.md
 tests/inline-code-fixed.md
 tests/stacked-fixed.md
 tests/real-example-fixed.md
 tests/unused-quote-fixed.md
 tests/fenced-code-fixed.md
-tests/spaced-quote-fixed.md
+tests/multiline-quote-fixed.md
 tests/relaxed-quotes-fixed.md
+tests/string-cite-fixed.md
 
 results.xml

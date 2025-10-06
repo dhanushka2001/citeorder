@@ -3,20 +3,23 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
+#include <limits.h>
 
 #define MAX_LINES 10000
 #define MAX_ENTRIES 1000
 #define MAX_LINE_LEN 1024
 
 typedef struct {
-    int oldNum;
+    char *label;
+    // int oldNum;
     int newNum;
     int lineIdx;
     const char *text;
 } FullEntry;
 
 typedef struct {
-    int oldNum;
+    char *label;
+    // int oldNum;
     int newNum;
     int lineIdx;
     char *pos;       // pointer to start of citation in line '['
@@ -42,9 +45,10 @@ void markCodeBlocks(const char **lines, int lineCount, int *isCodeLine) {
     }
 }
 
-int isInsideInlineCode(const char *line, const char *pos, const char *end) {
+// Check if a given portion of a line is inside inline code
+int isInsideInlineCode(const char *line, const char *start, const char *end) {
     bool inCode = 0;
-    int cite_idx = (int)(pos - line); // index of '[' for this citation [^citeNum]
+    int cite_idx = (int)(start - line); // index of '[' for this citation [^citeNum]
     // scan left-to-right from beginning of line to just before '[' in [^citeNum]
     for (int i = 0; i < cite_idx - 1; i++) {
 	if (line[i] == '`' && line[i+1] == '`') {
@@ -70,29 +74,84 @@ int findCitation(const char *line, const char **pos, int *num) {
     char *end;
     long n = strtol(p+2, &end, 10); // "p+2" skips past '[^'. "strol" reads as many digits as possible into n. "end" points to the first non-digit character
     if (end && *end == ']') {
-	if (isInsideInlineCode(line, p, end)) {
-	    return 0;
-	} else {
+	    if (isInsideInlineCode(line, p, end)) {
+	        return 0;
+	    } else {
             *num = (int)n;
             *pos = end + 1; // found a citation, move pointer to after the ']'
             return 1;
-	}
+	    }
     }
     *pos = p + 2; // did not find a citation, move pointer 2 spaces after '[^'
     return findCitation(line, pos, num);
+}
+
+int findInTextCitation(const char *line, const char **pos, char **label) {
+    const char *p;
+    if (!pos || *pos == NULL)
+        p = strstr(line, "[^");
+    else
+        p = strstr(*pos, "[^");
+
+    if (!p) return 0;
+
+    const char *end = strchr(p + 2, ']');
+    if (!end) return 0; // no closing bracket anywhere → no citation in this line
+    
+    // check if footnote is inside inline code
+    if (isInsideInlineCode(line, p, end)) return 0;
+
+    // Extract raw label (trim spaces inside)
+    const char *start = p + 2;
+    while (*start && isspace((unsigned char)*start)) start++; // skip leading spaces
+
+    const char *finish = end - 1;
+    while (finish >= start && isspace((unsigned char)*finish)) finish--; // trim trailing spaces
+
+    size_t len = finish - start + 1;
+    // if (len <= 0) return 0;
+
+    *label = strndup(start, len); // caller must free
+    *pos = end + 1; // citation [^something] was found, move one space past ']'
+
+    return 1; // return 1 to keep while loop searching for single/stacked in-text footnotes
+}
+
+// returns 1 if a valid full-entry footnote is found, else 0
+int findFullEntry(const char *line, char **label, const char **body) {
+    // must start with '[^', thus don't need to worry about being inside inline code
+    if (strncmp(line, "[^", 2) != 0) return 0;
+
+    const char *p = line + 2; // skip "[^"
+
+    // find closing bracket
+    const char *end = strchr(p, ']');
+    if (!end) return 0;
+
+    // next character must be ':'
+    if (*(end + 1) != ':') return 0;
+
+    // extract label
+    size_t len = end - p;
+
+    // allocate label string
+    *label = strndup(p, len);  // caller must free
+    *body = end + 2;           // after "]:"
+
+    return 1;
 }
 
 // scan line right-to-left looking for a '"' or a ']'
 int backScanForQuote(const char *line, int pos) {
     for (int i = pos - 1; i >= 0; i--) {
         // check if hit a previous in-text citation before reaching a quote
-   	if (i > 2 && line[i] == ']') {
-   	    if (isdigit((unsigned char)line[i - 1]) &&
-		line[i - 2] == '^' &&
-   	    	line[i - 3] == '[') {
-   		return -2;
+   	    if (i > 2 && line[i] == ']') {
+   	        if (isdigit((unsigned char)line[i - 1]) &&
+	    	line[i - 2] == '^' &&
+   	        	line[i - 3] == '[') {
+   	    	return -2;
+   	        }
    	    }
-   	}
         if (line[i] == '"') {
 	   return i;
         }
@@ -102,37 +161,49 @@ int backScanForQuote(const char *line, int pos) {
 }
 
 // Check if citation is properly after quotes/punctuation
-int hasProperQuoteContext(const char **lines, int lineNum, int citeNum) {
+int hasProperQuoteContext(const char **lines, int lineNum, const char *pos) {
     const char *line = lines[lineNum];
-    char pattern[32];
-    snprintf(pattern, sizeof(pattern), "[^%d]", citeNum);
-
-    const char *p = strstr(line, pattern);
-    if (!p) return 0;                 // citation not found
-
-    int cite_idx = (int)(p - line);   // index of '[' for this exact unique citation [^citeNum]
-
-    // Scan right-to-left before cite_idx '[' to find matched quote spans.
-    // allow one or more stacked in-line citation markers [^123]
-    int j = 0;
-    while (line[cite_idx - 1 - 4*j] == ']') {
-	if (!isdigit((unsigned char)line[cite_idx - 1 - 4*j - 1])) return 0;
-	if (line[cite_idx - 1 - 4*j - 2] != '^') return 0;
-	if (line[cite_idx - 1 - 4*j - 3] != '[') return 0;
-	j++;
-	if (cite_idx - 1 - 4*j < 2) return 0; // if less than 2 chars, then no space for quote and 1 char
+    
+    // pos given from findInTextCitation(), the position after ']' in [^citeNum]
+    int q = (int)(pos - line);
+    // search backwards from ']' to have q point to '['
+    while (q > 0) {
+        if (line[q-1] == '[' && line[q] == '^') {
+            q--;
+            break;
+        }
+        q--;
     }
-    // int start_quote = 0;
+
+    int cite_idx = q; //(int)(p - line);   // index of '[' for this exact unique citation [^citeNum]
+
+    q--; // q pointing to the left of cite_idx '['
+    
+    // check if cite_idx '[' is to the left of a closing footnote ']'
+    if (line[q] == ']') {
+        // scan backwards for '[^', leaving enough room for at least "A"
+        while (q > 3) {
+            // if to the left of a stack, return true (already checked footnotes to the left) 
+            if (line[q-1] == '[' && line[q] == '^') {
+                return 1;
+            }
+            q--;
+        }
+        // could not find opening '[^ for ']' to its left, therefore not proper quote context
+        return 0;
+    }
+
     int end_quote = 0;
-    char c = line[cite_idx - 1 - 4*j];
+    char c = line[cite_idx - 1];
+    // check if cite_idx '[' is to the left of an end quote '"'
     if (c == '"') {
-	end_quote = cite_idx - 1 - 4*j;
+	    end_quote = cite_idx - 1;
     }
-    // allow punctuation directly after the end quote
+    // allow at most 1 punctuation directly after the end quote
     if (c == ',' || c == '.' || c == ';' || c == ':' || c == '?' || c == '!' || c == ')') {
-	if (line[cite_idx - 1 - 4*j - 1] == '"') {
-	    end_quote = cite_idx - 1 - 4*j - 1;
-	}
+	    if (line[cite_idx - 2] == '"') {
+	        end_quote = cite_idx - 2;
+	    }
     }
     
     // If there is no closing quote before the citation, it's invalid.
@@ -140,30 +211,32 @@ int hasProperQuoteContext(const char **lines, int lineNum, int citeNum) {
 
     // Scan right-to-left to before closing quote to find opening quote, must be before a previous in-text citation, could be in a line prior.
     int var = backScanForQuote(line, end_quote);
-    if (var == -2) return 0;
-    if (var >= 0) return 1;
+    if (var == -2) return 0; // backScanForQuote() found an in-text citation before an opening quote
+    if (var >= 0) return 1; // backScanForQuote() found the opening quote
 
 
-    // did not find opening quote in the same line, could be in previous line
+    // did not find opening quote in the same line, loop through all previous lines to find it
     for (int i = 0; i < lineNum; i++) {
-	const char *pline = lines[lineNum - 1 - i];
-	size_t len = strlen(pline);
-	int var = backScanForQuote(pline, len);
-	if (var == -2) return 0;
-	if (var >= 0) return 1;
+	    const char *pline = lines[lineNum - 1 - i];
+	    size_t len = strlen(pline);
+	    int var = backScanForQuote(pline, len);
+	    if (var == -2) return 0;
+	    if (var >= 0) return 1;
     }
-    // could not find '"' in any of the lines
+    // could not find an opening quote in any of the lines
     return 0;
 }
 
 // Update in-text citations in a line, keeping stacked citations sorted
 void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lineIdx) {
     char *p = line;
+    // recursively search for start of footnotes (single or stacked)
     while ((p = strstr(p, "[^")) != NULL) {
-        // find stacked citations
         char *stackStart = p;
         char *stackEnd = p;
         int count = 0;
+
+        // count stacked [^...]
         while (stackEnd && strncmp(stackEnd, "[^", 2) == 0) {
             char *endbr = strchr(stackEnd, ']');
             if (!endbr) break;
@@ -172,63 +245,134 @@ void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lin
         }
 
         if (count > 1) {
-            // collect newNums for the stack
-            int nums[16];
+            const int MAX_STACK = 16;
+            int nums[MAX_STACK];
             char *q = stackStart;
-            for (int k = 0; k < count; ++k) {
-                char *caret = strchr(q, '^');
-                int oldNum = atoi(caret+1);
-                // find newNum
-                int newNum = oldNum;
+            int k = 0;
+            int any_missing = 0;
+        
+            // Parse each [^ ... ] within the stack without mutating the line
+            while (k < count) {
+                // find next "[^"
+                char *footnoteStart = strstr(q, "[^");
+                if (!footnoteStart || footnoteStart >= stackEnd) break;
+        
+                char *footnoteEnd = strchr(footnoteStart, ']');
+                if (!footnoteEnd || footnoteEnd >= stackEnd) break;
+        
+                // label bounds (don't mutate)
+                char *label_s = footnoteStart + 2;        // first char after "[^"
+                char *label_e = footnoteEnd - 1;          // last char before ']'
+        
+                // trim by scanning (no memmove)
+                while (label_s <= label_e && isspace((unsigned char)*label_s)) label_s++;
+                while (label_e >= label_s && isspace((unsigned char)*label_e)) label_e--;
+        
+                // copy trimmed label
+                char labelbuf[128];
+                if (label_s > label_e) {
+                    labelbuf[0] = '\0';
+                } else {
+                    int lablen = (int)(label_e - label_s + 1);
+                    if (lablen >= (int)sizeof(labelbuf)) lablen = (int)sizeof(labelbuf) - 1;
+                    memcpy(labelbuf, label_s, (size_t)lablen);
+                    labelbuf[lablen] = '\0';
+                }
+        
+                // lookup newNum
+                int newNum = -1;
                 for (int j = 0; j < inCount; j++) {
-                    if (inTexts[j].lineIdx == lineIdx && inTexts[j].oldNum == oldNum) {
+                    if (inTexts[j].lineIdx == lineIdx && strcmp(inTexts[j].label, labelbuf) == 0) {
                         newNum = inTexts[j].newNum;
                         break;
                     }
                 }
-                nums[k] = newNum;
-                q = strchr(q, ']') + 1;
+                if (newNum == -1) any_missing = 1;
+                nums[k++] = newNum;
+        
+                // advance q to just after this footnote's closing ']'
+                q = footnoteEnd + 1;
             }
-
-            // sort numbers
-            for (int a = 0; a < count-1; a++)
-                for (int b = a+1; b < count; b++)
+        
+            // If something went wrong (missing mapping or parsed fewer tokens), skip modifying this stack
+            if (k != count || any_missing) {
+                // safe fallback: do not touch this stack
+                p = stackEnd;
+                continue;
+            }
+        
+            // sort nums ascending
+            for (int a = 0; a < k - 1; a++)
+                for (int b = a + 1; b < k; b++)
                     if (nums[a] > nums[b]) {
                         int tmp = nums[a]; nums[a] = nums[b]; nums[b] = tmp;
                     }
-
-            // write back sorted numbers
-            q = stackStart;
-            for (int k = 0; k < count; k++) {
-                char *caret = strchr(q, '^');
-                char *endbr = strchr(q, ']');
-                char newStr[16];
-                int len = snprintf(newStr, sizeof(newStr), "%d", nums[k]);
-                memmove(caret+1 + len, endbr, strlen(endbr)+1);  // shift if needed
-                memcpy(caret+1, newStr, len);
-                q = endbr + (len - (endbr - caret -1)) + 1;
+        
+            // build replacement stack string
+            char newStack[512];
+            size_t np = 0;
+            for (int i = 0; i < k; i++) {
+                int written = snprintf(newStack + np, sizeof(newStack) - np, "[^%d]", nums[i]);
+                if (written < 0 || (size_t)written >= sizeof(newStack) - np) break; // overflow safe-guard
+                np += (size_t)written;
             }
-
-            p = stackEnd;
+            newStack[np] = '\0';
+        
+            // replace the entire original stack (stackStart .. stackEnd-1) with newStack
+            size_t tail_len = strlen(stackEnd);
+            memmove(stackStart + np, stackEnd, tail_len + 1); // shift tail
+            memcpy(stackStart, newStack, np);                 // write new stack
+        
+            // continue scanning after replaced stack
+            p = stackStart + np;
         } else {
-            // single citation: just replace normally
-            char *caret = strchr(stackStart, '^');
-            int oldNum = atoi(caret+1);
-            int newNum = oldNum;
+            // --- single citation ---
+            char *caret = strchr(stackStart, '^');   // points at '^'
+            if (!caret) { p = stackStart + 2; continue; }
+
+            char *endbr = strchr(caret, ']');        // points at ']'
+            if (!endbr) { p = caret + 1; continue; }
+
+            // compute trimmed label boundaries (do NOT mutate the original string)
+            char *label_s = caret + 1;   // first char after '^'
+            char *label_e = endbr - 1;   // last char before ']'
+            while (label_s <= label_e && isspace((unsigned char)*label_s)) label_s++;
+            while (label_e >= label_s && isspace((unsigned char)*label_e)) label_e--;
+
+            // copy trimmed label to a buffer for strcmp
+            char labelbuf[128];
+            int lablen = (label_s > label_e) ? 0 : (int)(label_e - label_s + 1);
+            if (lablen >= (int)sizeof(labelbuf)) lablen = (int)sizeof(labelbuf) - 1;
+            if (lablen > 0) memcpy(labelbuf, label_s, (size_t)lablen);
+            labelbuf[lablen] = '\0';
+
+            // look up the new number
+            int newNum = -1;
             for (int j = 0; j < inCount; j++) {
-                if (inTexts[j].lineIdx == lineIdx && inTexts[j].oldNum == oldNum) {
+                if (inTexts[j].lineIdx == lineIdx && strcmp(inTexts[j].label, labelbuf) == 0) {
                     newNum = inTexts[j].newNum;
                     break;
                 }
             }
-            if (newNum != oldNum) {
+
+            if (newNum != -1) {
+                // write the numeric label immediately after '^' (caret+1),
+                // then move the ']' and tail to be immediately after the number
                 char newStr[16];
-                int len = snprintf(newStr, sizeof(newStr), "%d", newNum);
-                char *endbr = strchr(stackStart, ']');
-                memmove(caret+1 + len, endbr, strlen(endbr)+1);
-                memcpy(caret+1, newStr, len);
+                int nlen = snprintf(newStr, sizeof(newStr), "%d", newNum);
+
+                // move tail (from ']' onward) to its new position
+                memmove(caret + 1 + nlen, endbr, strlen(endbr) + 1); // includes '\0'
+
+                // copy the digits into place (overwriting any leading spaces)
+                memcpy(caret + 1, newStr, (size_t)nlen);
+
+                // advance p to just after the closing ']'
+                p = caret + 1 + nlen + 1;
+            } else {
+                // no mapping found; leave it alone and continue after the ']'
+                p = endbr + 1;
             }
-            p = stackStart + 3; // move past [^x]
         }
     }
 }
@@ -320,23 +464,42 @@ int main(int argc, char **argv) {
 
     // Collect full-entry citations
     // ----------------------------
-    for(int i = 0; i < lineCount; i++){
-        if(strstr(lines[i], "]:") && !isCodeLine[i]){
-            const char *pos = NULL;
-            int num;
-            if(findCitation(lines[i], &pos, &num)){
+    for (int i = 0; i < lineCount; i++){
+        if (strstr(lines[i], "]:") && !isCodeLine[i]){
+            char *label = NULL;
+            const char *body;
+            if (findFullEntry(lines[i], &label, &body)){
+                // check if label has length<=0
+                if (strlen(label) == 0) {
+                    fprintf(stderr, "ERROR: [^%s] full-entry citation missing label (line %d)\n",
+                            label, i+1);
+                    return 1;
+                }
+                // check if label contains any spaces
+                for (int k = 0; k < strlen(label); k++) {
+                    if (isspace(label[k])) {
+                        fprintf(stderr, "ERROR: [^%s] full-entry citation contains a space (line %d)\n",
+                                label, i+1);
+                        return 1;
+                    }
+                }
                 // check duplicates
-                for(int j = 0; j < fullCount; j++){
-                    if(fullEntries[j].oldNum == num){
-                        fprintf(stderr,"ERROR: duplicate [^%d] full-entry citations (line %d and %d)\n",
-                                num, fullEntries[j].lineIdx+1, i+1);
+                for (int j = 0; j < fullCount; j++){
+                    if (strcmp(fullEntries[j].label, label) == 0) {
+                        fprintf(stderr,"ERROR: duplicate [^%s] full-entry citations (line %d and %d)\n",
+                                label, fullEntries[j].lineIdx+1, i+1);
+                        // cleanup
+                        for (int k = 0; k < fullCount; k++) {
+                            free(fullEntries[k].label);
+                        }
+                        free(label);
                         exit(1);
                     }
                 }
-                fullEntries[fullCount].oldNum = num;
-                fullEntries[fullCount].lineIdx = i;
-                fullEntries[fullCount].text = lines[i];
-                fullEntries[fullCount].newNum = 0; // assign later
+                fullEntries[fullCount].label    = label;    // store strndup'd label
+                fullEntries[fullCount].lineIdx  = i;
+                fullEntries[fullCount].text     = lines[i];
+                fullEntries[fullCount].newNum   = 0;        // assign later
                 fullCount++;
             }
         }
@@ -345,26 +508,59 @@ int main(int argc, char **argv) {
     // Collect in-text citations and assign sequential new numbers
     // -----------------------------------------------------------
     int nextNum = 1;
-    for(int i=0;i<lineCount;i++){
-        if(strstr(lines[i], "]:") || isCodeLine[i]) continue; // skip full-entry lines or code blocks
+    for (int i = 0; i < lineCount; i++){
+        if (strstr(lines[i], "]:") || isCodeLine[i]) continue; // skip full-entry lines or code blocks
 
         const char *pos=NULL;
-        int num;
-        while(findCitation(lines[i], &pos, &num)){
+        char *label = NULL;
+        
+        // recursively check lines[i] for in-text footnotes
+        while (findInTextCitation(lines[i], &pos, &label)){
+            // check if label has length<=0
+            if (strlen(label) == 0) {
+                fprintf(stderr, "ERROR: in-text citation [^%s] missing label (line %d)\n",
+                        label, i+1);
+                return 1;
+            }
+            // check if label contains any spaces
+            for (int k = 0; k < strlen(label); k++) {
+                if (isspace(label[k])) {
+                    fprintf(stderr, "ERROR: in-text citation [^%s] contains a space (line %d)\n",
+                            label, i+1);
+                    return 1;
+                }
+            }
             // find the corresponding full entry
             FullEntry *entry=NULL;
-            for(int j=0;j<fullCount;j++){
-                if(fullEntries[j].oldNum==num){ entry=&fullEntries[j]; break; }
+            for (int j = 0; j < fullCount; j++){
+                if(strcmp(fullEntries[j].label, label) == 0){
+                    entry = &fullEntries[j];
+                    break;
+                }
             }
             if(!entry) {
-                fprintf(stderr,"ERROR: in-text citation [^%d] without full-entry (line %d)\n", num, i+1);
+                fprintf(stderr,"ERROR: in-text citation [^%s] without full-entry (line %d)\n", label, i+1);
+                // cleanup
+                for (int k = 0; k < inCount; k++) {
+                    free(inTexts[k].label);
+                }
+                for (int j = 0; j < fullCount; j++) {
+                    free(fullEntries[j].label);
+                }
                 exit(1);
             }
-	    if (!relaxedQuotes) {
-                if(!hasProperQuoteContext(lines, i, num)) {
-                    fprintf(stderr,"WARNING: in-text citation [^%d] not properly quoted (line %d)\n", num, i+1);
+	        if (!relaxedQuotes) {
+                if(!hasProperQuoteContext(lines, i, pos)) {
+                    fprintf(stderr,"WARNING: in-text citation [^%s] not properly quoted (line %d)\n", label, i+1);
+                // cleanup
+                for (int k = 0; k < inCount; k++) {
+                    free(inTexts[k].label);
+                }
+                for (int j = 0; j < fullCount; j++) {
+                    free(fullEntries[j].label);
+                }
                     exit(1);
-		}
+		        }
             }
 
             // assign a new number if not already assigned
@@ -372,16 +568,16 @@ int main(int argc, char **argv) {
                 entry->newNum = nextNum++;
             }
 
-            inTexts[inCount].oldNum=num;
-            inTexts[inCount].newNum=entry->newNum;
-            inTexts[inCount].lineIdx=i;
-            inTexts[inCount].ref=entry;
+            inTexts[inCount].label      = label;
+            inTexts[inCount].newNum     = entry->newNum;
+            inTexts[inCount].lineIdx    = i;
+            inTexts[inCount].ref        = entry;
             inCount++;
         }
     }
 
-    // Ensure unused fullEntries keep their oldNum
-    // -------------------------------------------
+    // Unused fullEntries get bubbled to the top
+    // -----------------------------------------
     int numUnusedFullEntry = 0;
     for (int i = 0; i < fullCount; i++) {
 	if (fullEntries[i].newNum == 0) {
@@ -398,18 +594,34 @@ int main(int argc, char **argv) {
 
     // Check if anything changed
     // -------------------------
-    bool changed = 0;
+    bool changed = false;
+    
+    // helper: check if string is purely digits
+    bool isNumeric(const char *s) {
+        if (!s || !*s) return false;
+        for (const char *p = s; *p; ++p) {
+            if (!isdigit((unsigned char)*p))
+                return false;
+        }
+        return true;
+    }
+    bool entryChanged(const char *label, int newNum) {
+        char numStr[16];
+        snprintf(numStr, sizeof(numStr), "%d", newNum);
+        return !isNumeric(label) || strcmp(label, numStr) != 0;
+    }
+    // Check if anything changed
     for (int i = 0; i < fullCount; i++) {
-	if (fullEntries[i].oldNum != fullEntries[i].newNum) {
-	    changed = 1;
-	    break;
-	}
+        if (entryChanged(fullEntries[i].label, fullEntries[i].newNum)) {
+            changed = true;
+            break;
+        }
     }
     for (int j = 0; j < inCount; j++) {
-	if (inTexts[j].oldNum != inTexts[j].newNum) {
-	    changed = 1;
-	    break;
-	}
+        if (entryChanged(inTexts[j].label, inTexts[j].newNum)) {
+            changed = true;
+            break;
+        }
     }
     
     // Output to new file
@@ -427,40 +639,40 @@ int main(int argc, char **argv) {
         if(!out){ perror("fopen"); return 1; }
         
         // Update lines
-	int i = 0;
+	    int i = 0;
         while (i < lineCount){
             if (!strstr(lines[i], "]:")) {
-	    	// --- in-text line ---
-            	char *lineCopy = strdup(lines[i]);
-            	updateLineInTexts(lineCopy, inTexts, inCount, i);
-            	fputs(lineCopy, out);
-            	free(lineCopy);
-		i++;
-	    } else {
-		// --- full entry line ---
+    	    	// --- in-text line ---
+           	    char *lineCopy = strdup(lines[i]);
+           	    updateLineInTexts(lineCopy, inTexts, inCount, i);
+           	    fputs(lineCopy, out);
+           	    free(lineCopy);
+    		    i++;
+            } else {
+                // --- full entry line ---
                 int start = i;
                 int end = i;
                 while (end + 1 < lineCount && strstr(lines[end + 1], "]:")) {
                     end++;
                 }
-    
+            
                 // Collect block entries
                 int blockSize = end - start + 1;
-                FullEntry *block[blockSize];
+                FullEntry **block = malloc(blockSize * sizeof(*block));
                 int k = 0;
                 for (int j = start; j <= end; j++) {
-                    const char *pos = NULL;
-                    int num;
-                    if (findCitation(lines[j], &pos, &num)) {
+                    char *label;
+                    const char *body;
+                    if (findFullEntry(lines[j], &label, &body)) {
                         for (int fe = 0; fe < fullCount; fe++) {
-                            if (fullEntries[fe].oldNum == num) {
+                            if (strcmp(fullEntries[fe].label, label) == 0) {
                                 block[k++] = &fullEntries[fe];
                                 break;
                             }
                         }
                     }
                 }
-    
+            
                 // Sort block by newNum
                 for (int a = 0; a < k - 1; a++) {
                     for (int b = a + 1; b < k; b++) {
@@ -471,37 +683,38 @@ int main(int argc, char **argv) {
                         }
                     }
                 }
-    
+            
                 // Print block in order
                 for (int a = 0; a < k; a++) {
-                    char *lineCopy = strdup(block[a]->text);
-    
-                    // Update marker in this line
-                    char oldMarker[16], newMarker[16];
-                    snprintf(oldMarker, sizeof(oldMarker), "[^%d]:", block[a]->oldNum);
-                    snprintf(newMarker, sizeof(newMarker), "[^%d]:", block[a]->newNum);
-                    char *p = strstr(lineCopy, oldMarker);
-                    if (p) {
-                        memmove(p + strlen(newMarker), p + strlen(oldMarker),
-                                strlen(p + strlen(oldMarker)) + 1);
-                        memcpy(p, newMarker, strlen(newMarker));
-                    }
-            	    fputs(lineCopy,out);
-
-		    // Ensure newline after every full-entry
-		    size_t len = strlen(lineCopy);
-                    if (len == 0 || lineCopy[len - 1] != '\n') {
+                    const FullEntry *fe = block[a];
+            
+                    // Construct updated line
+                    const char *orig = fe->text;
+                    const char *colon = strchr(orig, ':');  // should always exist
+                    if (!colon) continue;
+            
+                    char newMarker[32];
+                    snprintf(newMarker, sizeof(newMarker), "[^%d]:", fe->newNum);
+            
+                    // Print new marker + remainder of original line (after the ':')
+                    fputs(newMarker, out);
+                    fputs(colon + 1, out);
+            
+                    // Ensure newline
+                    size_t len = strlen(orig);
+                    if (len == 0 || orig[len - 1] != '\n') {
                         fputc('\n', out);
                     }
-            	    free(lineCopy);
-		}
-		i = end + 1;
-	    }
+                }
+            
+                free(block);
+                i = end + 1;
+            }
         }
         fclose(out);
-	printf("Output written to %s\n", outName);
+	    printf("Output written to %s\n", outName);
     } else {
-	printf("No changes required.\n");
+	    printf("No changes required.\n");
     }
     return 0;
 }

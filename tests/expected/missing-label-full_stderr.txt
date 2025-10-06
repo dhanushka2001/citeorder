@@ -1,0 +1,1 @@
+ERROR: [^] full-entry citation missing label (line 5)

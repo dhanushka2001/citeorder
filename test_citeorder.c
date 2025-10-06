@@ -226,7 +226,7 @@ void run_test_case(const char *test_name,
 
 // Example test cases
 int main() {
-    int total_tests = 13;
+    int total_tests = 18;
     junit = fopen("results.xml", "w");
     if (!junit) return 1;
     long headerPos = ftell(junit);
@@ -235,23 +235,23 @@ int main() {
 
     // 1. No change required test
     run_test_case("no-change",
-		  NULL,					       // flag
-        	  "tests/no-change.md",                        // input file
-        	  NULL,				               // expected output file
+		          NULL,					                       // flag
+        	      "tests/no-change.md",                        // input file
+        	      NULL,				                           // expected output file
                   "tests/expected/no-change_stdout.txt",       // expected stdout
-        	  NULL                                         // expected stderr
+        	      NULL                                         // expected stderr
     );
     // 2. Stacked renumbering test
     run_test_case("stacked",
-		  NULL,					       // flag
-        	  "tests/stacked.md", 	                       // input file
-        	  "tests/expected/stacked-fixed.md",           // expected output file
+		          NULL,					                       // flag
+        	      "tests/stacked.md", 	                       // input file
+        	      "tests/expected/stacked-fixed.md",           // expected output file
                   "tests/expected/stacked_stdout.txt",	       // expected stdout
-        	  NULL                                         // expected stderr
+        	      NULL                                         // expected stderr
     );
     // 3. Missing quote test
     run_test_case("missing-quote",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/missing-quote.md",                    // input file
                   NULL,                                        // expected output file
                   NULL,                                        // expected stdout
@@ -259,7 +259,7 @@ int main() {
     );
     // 4. Missing full-entry test
     run_test_case("missing-full",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/missing-full.md",                     // input file
                   NULL,                                        // expected output file
                   NULL,                                        // expected stdout
@@ -267,7 +267,7 @@ int main() {
     );
     // 5. Unused quote test
     run_test_case("unused-quote",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/unused-quote.md",                     // input file
                   "tests/expected/unused-quote-fixed.md",      // expected output file
                   "tests/expected/unused-quote_stdout.txt",    // expected stdout
@@ -275,7 +275,7 @@ int main() {
     );
     // 6. Full-entry test
     run_test_case("full-entry",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/full-entry.md",                       // input file
                   "tests/expected/full-entry-fixed.md",        // expected output file
                   "tests/expected/full-entry_stdout.txt",      // expected stdout
@@ -283,31 +283,31 @@ int main() {
     );
     // 7. Multiple punctuation test
     run_test_case("multiple-punc",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/multiple-punc.md",                    // input file
-                  NULL,				               // expected output file
-                  NULL,					       // expected stdout
+                  NULL,				                           // expected output file
+                  NULL,					                       // expected stdout
                   "tests/expected/multiple-punc_stderr.txt"    // expected stderr
     );
     // 8. Separated stack test
     run_test_case("separated-stack",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/separated-stack.md",                  // input file
-                  NULL,				               // expected output file
-                  NULL,					       // expected stdout
+                  NULL,				                           // expected output file
+                  NULL,					                       // expected stdout
                   "tests/expected/separated-stack_stderr.txt"  // expected stderr
     );
-    // 9. Spaced quote test
-    run_test_case("spaced-quote",
-		  NULL,					       // flag
-                  "tests/spaced-quote.md",                     // input file
-                  "tests/expected/spaced-quote-fixed.md",      // expected output file
-                  "tests/expected/spaced-quote_stdout.txt",    // expected stdout
+    // 9. Multiline quote test
+    run_test_case("multiline-quote",
+		          NULL,					                       // flag
+                  "tests/multiline-quote.md",                  // input file
+                  "tests/expected/multiline-quote-fixed.md",   // expected output file
+                  "tests/expected/multiline-quote_stdout.txt", // expected stdout
                   NULL                                         // expected stderr
     );
     // 10. Inline-code test
     run_test_case("inline-code",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/inline-code.md",                      // input file
                   "tests/expected/inline-code-fixed.md",       // expected output file
                   "tests/expected/inline-code_stdout.txt",     // expected stdout
@@ -315,7 +315,7 @@ int main() {
     );
     // 11. Fenced code example
     run_test_case("fenced-code",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/fenced-code.md",                      // input file
                   "tests/expected/fenced-code-fixed.md",       // expected output file
                   "tests/expected/fenced-code_stdout.txt",     // expected stdout
@@ -323,15 +323,55 @@ int main() {
     );
     // 12. Relaxed quotes example
     run_test_case("relaxed-quotes",
-		  "-r",					       // flag
+		          "-r",					                       // flag
                   "tests/relaxed-quotes.md",                   // input file
                   "tests/expected/relaxed-quotes-fixed.md",    // expected output file
                   "tests/expected/relaxed-quotes_stdout.txt",  // expected stdout
                   NULL                                         // expected stderr
     );
-    // 13. Real example
+    // 13. String citation example
+    run_test_case("string-cite",
+		          "-r",					                       // flag
+                  "tests/string-cite.md",                      // input file
+                  "tests/expected/string-cite-fixed.md",       // expected output file
+                  "tests/expected/string-cite_stdout.txt",     // expected stdout
+                  NULL                                         // expected stderr
+    );
+    // 14. Spaced full-entry test
+    run_test_case("spaced-fullentry",
+		          NULL,					                       // flag
+                  "tests/spaced-fullentry.md",                 // input file
+                  NULL,				                           // expected output file
+                  NULL,					                       // expected stdout
+                  "tests/expected/spaced-fullentry_stderr.txt" // expected stderr
+    );
+    // 15. Spaced in-text test
+    run_test_case("spaced-intext",
+		          NULL,					                       // flag
+                  "tests/spaced-intext.md",                    // input file
+                  NULL,				                           // expected output file
+                  NULL,					                       // expected stdout
+                  "tests/expected/spaced-intext_stderr.txt"    // expected stderr
+    );
+    // 16. Missing full-entry label test
+    run_test_case("missing-label-full",
+		          NULL,					                            // flag
+                  "tests/missing-label-full.md",                    // input file
+                  NULL,				                                // expected output file
+                  NULL,					                            // expected stdout
+                  "tests/expected/missing-label-full_stderr.txt"    // expected stderr
+    );
+    // 17. Missing in-text label test
+    run_test_case("missing-label-intext",
+		          NULL,					                            // flag
+                  "tests/missing-label-intext.md",                  // input file
+                  NULL,				                                // expected output file
+                  NULL,					                            // expected stdout
+                  "tests/expected/missing-label-intext_stderr.txt"  // expected stderr
+    );
+    // 18. Real example
     run_test_case("real-example",
-		  NULL,					       // flag
+		          NULL,					                       // flag
                   "tests/real-example.md",                     // input file
                   "tests/expected/real-example-fixed.md",      // expected output file
                   "tests/expected/real-example_stdout.txt",    // expected stdout
