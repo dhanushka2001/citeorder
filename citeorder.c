@@ -26,6 +26,29 @@ typedef struct {
     FullEntry *ref;
 } InTextCitation;
 
+/* Define my own strdup and strndup functions */
+#ifndef HAVE_STRDUP
+static char *my_strdup(const char *s) {
+    size_t len = strlen(s) + 1;
+    char *copy = malloc(len);
+    if (copy) memcpy(copy, s, len);
+    return copy; // user will have to free
+}
+#define strdup my_strdup
+#endif
+
+#ifndef HAVE_STRNDUP
+static char *my_strndup(const char *s, size_t n) {
+    char *copy = malloc(n);
+    if (copy) {
+        memcpy(copy, s, n);
+        copy[n] = '\0';
+    }
+    return copy; // user will have to free
+}
+#define strndup my_strndup
+#endif
+
 void markCodeBlocks(const char **lines, int lineCount, int *isCodeLine) {
     int insideFence = 0;
     for (int i = 0; i < lineCount; i++) {
@@ -389,6 +412,7 @@ void print_version(void) {
 #else
     printf("  Built with unknown compiler\n");
 #endif
+    printf("  Build date: %s, %s\n", __DATE__, __TIME__);
     printf("  Homepage: https://github.com/dhanushka2001/citeorder\n");
 }
 
