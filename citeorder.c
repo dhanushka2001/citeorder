@@ -551,7 +551,8 @@ int main(int argc, char **argv) {
             }
 	        if (!relaxedQuotes) {
                 if(!hasProperQuoteContext(lines, i, pos)) {
-                    fprintf(stderr,"WARNING: in-text citation [^%s] not properly quoted (line %d)\n", label, i+1);
+                    fprintf(stderr,"ERROR: in-text citation [^%s] not properly quoted (line %d)\n", label, i+1);
+                    printf("Help: Use the '-r' flag to relax quote handling. Run 'citeorder -h' for more info\n");
                 // cleanup
                 for (int k = 0; k < inCount; k++) {
                     free(inTexts[k].label);

@@ -331,7 +331,7 @@ int main() {
     );
     // 13. String citation example
     run_test_case("string-cite",
-		          "-r",					                       // flag
+		          NULL,				                           // flag
                   "tests/string-cite.md",                      // input file
                   "tests/expected/string-cite-fixed.md",       // expected output file
                   "tests/expected/string-cite_stdout.txt",     // expected stdout
