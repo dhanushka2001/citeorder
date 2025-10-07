@@ -1,1 +1,1 @@
-WARNING: in-text citation [^3] not properly quoted (line 3)
+ERROR: in-text citation [^3] not properly quoted (line 3)
