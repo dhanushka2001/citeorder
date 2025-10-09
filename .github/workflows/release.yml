@@ -83,7 +83,7 @@ jobs:
           # Create archive
           cd package
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            powershell Compress-Archive -Path * -DestinationPath ../citeorder-${VERSION}-${OSNAME}-${ARCH}.zip
+            powershell Compress-Archive -Path @(LICENSE, README.md, citeorder.exe) -DestinationPath ../citeorder-${VERSION}-${OSNAME}-${ARCH}.zip
           else
             tar -czvf ../citeorder-${VERSION}-${OSNAME}-${ARCH}.tar.gz *
           fi
