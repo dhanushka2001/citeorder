@@ -96,8 +96,8 @@ jobs:
         with:
           name: citeorder-${{ matrix.os }}
           path: |
-            citeorder-*.zip
-            citeorder-*.tar.gz
+            ./citeorder-*.zip
+            ./citeorder-*.tar.gz
 
   release:
     needs: build-and-test
