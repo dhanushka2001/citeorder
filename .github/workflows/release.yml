@@ -1,0 +1,114 @@
+name: Release (Tag-Based)
+
+# Explicit permissions for clarity
+permissions:
+  contents: write  # needed to create releases and upload release assets
+
+on:
+  push:
+    tags:
+      - "v*"  # triggers on version tags like v1.0
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install build tools (Linux only)
+      - name: Install build tools
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      # 3. Extract version number from tag
+      - name: Extract version
+        id: get_version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      # 4. Build citeorder and test_citeorder
+      - name: Build binaries
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            gcc -Wall -Wextra -O2 -o citeorder.exe citeorder.c
+            gcc -Wall -Wextra -O2 -o test_citeorder.exe test_citeorder.c
+          else
+            gcc -Wall -Wextra -O2 -o citeorder citeorder.c
+            gcc -Wall -Wextra -O2 -o test_citeorder test_citeorder.c
+          fi
+
+      # 5. Run integration tests
+      - name: Run integration tests
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ./test_citeorder.exe
+          else
+            ./test_citeorder
+          fi
+
+      # 6. Package binaries with LICENSE and README
+      - name: Package archive
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+
+          # Determine OS name for archive
+          case "${{ matrix.os }}" in
+            ubuntu-latest) OSNAME="ubuntu" ;;
+            macos-latest)  OSNAME="macos" ;;
+            windows-latest) OSNAME="windows" ;;
+          esac
+
+          ARCH="x86_64"
+          mkdir package
+
+          # Copy binaries
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp citeorder.exe package/
+          else
+            cp citeorder package/
+          fi
+
+          # Include LICENSE and README
+          cp LICENSE README.md package/
+
+          # Create archive
+          cd package
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            powershell Compress-Archive -Path * -DestinationPath ../citeorder-${VERSION}-${OSNAME}-${ARCH}.zip
+          else
+            tar -czvf ../citeorder-${VERSION}-${OSNAME}-${ARCH}.tar.gz *
+          fi
+          cd ..
+
+      # 7. Upload artifact for use in release job
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: citeorder-${{ matrix.os }}
+          path: |
+            citeorder-*.zip
+            citeorder-*.tar.gz
+
+  release:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download all artifacts from previous jobs
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      # 2. Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: citeorder-*/citeorder-*.{zip,tar.gz}
+          tag_name: ${{ github.ref_name }}
+          body: "Automated release of citeorder ${{ github.ref_name }}."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
