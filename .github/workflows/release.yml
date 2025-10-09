@@ -53,7 +53,7 @@ jobs:
           else
             ./test_citeorder
           fi
-          shell: bash
+        shell: bash
 
       # 6. Package binaries with LICENSE and README
       - name: Package archive
