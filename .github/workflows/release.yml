@@ -80,12 +80,15 @@ jobs:
           # Include LICENSE and README
           cp LICENSE README.md package/
 
+          # Create a dist folder for the archives
+          mkdir -p dist
+
           # Create archive
           cd package
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            pwsh -Command "Compress-Archive -Path 'citeorder.exe','LICENSE','README.md' -DestinationPath '../citeorder-${VERSION}-${OSNAME}-${ARCH}.zip'"
+            pwsh -Command "Compress-Archive -Path 'citeorder.exe','LICENSE','README.md' -DestinationPath '../dist/citeorder-${VERSION}-${OSNAME}-${ARCH}.zip'"
           else
-            tar -czvf ../citeorder-${VERSION}-${OSNAME}-${ARCH}.tar.gz *
+            tar -czvf ../dist/citeorder-${VERSION}-${OSNAME}-${ARCH}.tar.gz *
           fi
           cd ..
         shell: bash
@@ -96,8 +99,7 @@ jobs:
         with:
           name: citeorder-${{ matrix.os }}
           path: |
-            ./citeorder-*.zip
-            ./citeorder-*.tar.gz
+            dist/*
 
   release:
     needs: build-and-test
