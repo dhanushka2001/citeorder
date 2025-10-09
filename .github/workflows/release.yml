@@ -80,15 +80,12 @@ jobs:
           # Include LICENSE and README
           cp LICENSE README.md package/
 
-          # Create a dist folder for the archives
-          mkdir -p dist
-
           # Create archive
           cd package
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            pwsh -Command "Compress-Archive -Path 'citeorder.exe','LICENSE','README.md' -DestinationPath '../dist/citeorder-${VERSION}-${OSNAME}-${ARCH}.zip'"
+            pwsh -Command "Compress-Archive -Path citeorder.exe,LICENSE,README.md -DestinationPath ../citeorder-${VERSION}-${OSNAME}-${ARCH}.zip"
           else
-            tar -czvf ../dist/citeorder-${VERSION}-${OSNAME}-${ARCH}.tar.gz *
+            tar -czvf ../citeorder-${VERSION}-${OSNAME}-${ARCH}.tar.gz *
           fi
           cd ..
         shell: bash
@@ -99,23 +96,31 @@ jobs:
         with:
           name: citeorder-${{ matrix.os }}
           path: |
-            dist/*
+            citeorder-*.zip
+            citeorder-*.tar.gz
 
   release:
     needs: build-and-test
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Download all artifacts from previous jobs
+      # 1. Download all artifacts
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
 
-      # 2. Create GitHub Release
+      # 2. Optional — list to confirm paths
+      - name: List downloaded files
+        run: ls -R ./artifacts
+
+      # 3. Create GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: citeorder-*.zip,citeorder-*.tar.gz   # <-- direct path to archives
+          files: ./artifacts/citeorder-*/*.zip,./artifacts/citeorder-*/*.tar.gz
           tag_name: ${{ github.ref_name }}
           body: "Automated release of citeorder ${{ github.ref_name }}."
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
