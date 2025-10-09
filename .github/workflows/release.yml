@@ -62,9 +62,9 @@ jobs:
 
           # Determine OS name for archive
           case "${{ matrix.os }}" in
-            ubuntu-latest) OSNAME="ubuntu" ;;
-            macos-latest)  OSNAME="macos" ;;
-            windows-latest) OSNAME="windows" ;;
+            ubuntu-latest) OSNAME="Ubuntu" ;;
+            macos-latest)  OSNAME="macOS" ;;
+            windows-latest) OSNAME="Windows" ;;
           esac
 
           ARCH="x86_64"
