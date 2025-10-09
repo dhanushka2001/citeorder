@@ -183,7 +183,7 @@ int hasProperQuoteContext(const char **lines, int lineNum, const char *pos) {
             }
             q--;
         }
-        // could not find opening '[^ for ']' to its left, therefore not proper quote context
+        // could not find opening '[^' for ']' to its left, therefore not proper quote context
         return 0;
     }
 
