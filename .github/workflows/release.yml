@@ -25,12 +25,14 @@ jobs:
       - name: Install build tools
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y build-essential
-
+        shell: bash
+        
       # 3. Extract version number from tag
       - name: Extract version
         id: get_version
         run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-
+        shell: bash
+        
       # 4. Build citeorder and test_citeorder
       - name: Build binaries
         run: |
@@ -41,7 +43,8 @@ jobs:
             gcc -Wall -Wextra -O2 -o citeorder citeorder.c
             gcc -Wall -Wextra -O2 -o test_citeorder test_citeorder.c
           fi
-
+          shell: bash
+          
       # 5. Run integration tests
       - name: Run integration tests
         run: |
@@ -50,6 +53,7 @@ jobs:
           else
             ./test_citeorder
           fi
+          shell: bash
 
       # 6. Package binaries with LICENSE and README
       - name: Package archive
@@ -84,6 +88,7 @@ jobs:
             tar -czvf ../citeorder-${VERSION}-${OSNAME}-${ARCH}.tar.gz *
           fi
           cd ..
+        shell: bash
 
       # 7. Upload artifact for use in release job
       - name: Upload artifact
@@ -107,7 +112,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: citeorder-*/citeorder-*.{zip,tar.gz}
+          files: citeorder-*.zip,citeorder-*.tar.gz   # <-- direct path to archives
           tag_name: ${{ github.ref_name }}
           body: "Automated release of citeorder ${{ github.ref_name }}."
         env:
