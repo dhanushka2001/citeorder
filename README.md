@@ -20,7 +20,7 @@ Simple command-line tool to correctly reorder Footnotes in Markdown files.
 
 ## Motivation
 
-Markdown processors that support footnotes (e.g. [GitHub’s Markdown engine](https://github.com/github/cmark-gfm), which implements the [GitHub Flavored Markdown](https://github.github.com/gfm) spec) automatically reorder footnotes when converting ``.md`` files to HTML. However, ``citeorder`` will fix the ordering in the ``.md`` file itself, making it neater and easier to manage lots of footnotes. Especially useful when needing to add new footnotes in the middle of a long ``.md`` file and not having to spend ages reordering every in-text and full-entry footnote manually (speaking from experience...).
+Markdown processors that support footnotes (e.g. [GitHub’s Markdown engine](https://github.com/github/cmark-gfm), which implements the [GitHub Flavored Markdown](https://github.github.com/gfm) spec) automatically reorder footnotes when converting ``.md`` files to HTML. However, ``citeorder`` fixes the ordering in the ``.md`` file itself, making it neater and easier to manage lots of footnotes. Especially useful when needing to add new footnotes in the middle of a long ``.md`` file and not having to spend ages reordering every in-text and full-entry footnote manually (🥲).
 
 In-text footnotes (``"Alice here",[^1]``) and full-entry footnotes (``[^1]: Alice``) are a many-to-one relationship. ``citeorder`` assumes the connections are correct, and relabels them according to the order in which the **in-text footnotes** appear.
 

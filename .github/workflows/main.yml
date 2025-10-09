@@ -28,7 +28,7 @@ jobs:
           gcc -Wall -Wextra -O2 -o citeorder citeorder.c
           gcc -Wall -Wextra -O2 -o test_citeorder test_citeorder.c
 
-      - name: Run unit tests
+      - name: Run integratin tests
         run: |
           ./test_citeorder
         continue-on-error: true  # Don't stop workflow if tests fail
