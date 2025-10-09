@@ -431,6 +431,23 @@ void print_help(void) {
     print_version();
 }
 
+// helper: check if string is purely digits
+bool isNumeric(const char *s) {
+    if (!s || !*s) return false;
+    for (const char *p = s; *p; ++p) {
+        if (!isdigit((unsigned char)*p))
+            return false;
+    }
+    return true;
+}
+
+// helper: check if a citation changed
+bool entryChanged(const char *label, int newNum) {
+    char numStr[16];
+    snprintf(numStr, sizeof(numStr), "%d", newNum);
+    return !isNumeric(label) || strcmp(label, numStr) != 0;
+}
+
 int main(int argc, char **argv) {
     int relaxedQuotes = 0;
     const char *filename = NULL;
@@ -620,22 +637,6 @@ int main(int argc, char **argv) {
     // Check if anything changed
     // -------------------------
     bool changed = false;
-    
-    // helper: check if string is purely digits
-    bool isNumeric(const char *s) {
-        if (!s || !*s) return false;
-        for (const char *p = s; *p; ++p) {
-            if (!isdigit((unsigned char)*p))
-                return false;
-        }
-        return true;
-    }
-    bool entryChanged(const char *label, int newNum) {
-        char numStr[16];
-        snprintf(numStr, sizeof(numStr), "%d", newNum);
-        return !isNumeric(label) || strcmp(label, numStr) != 0;
-    }
-    // Check if anything changed
     for (int i = 0; i < fullCount; i++) {
         if (entryChanged(fullEntries[i].label, fullEntries[i].newNum)) {
             changed = true;
