@@ -11,7 +11,6 @@
 
 typedef struct {
     char *label;
-    // int oldNum;
     int newNum;
     int lineIdx;
     const char *text;
@@ -19,7 +18,6 @@ typedef struct {
 
 typedef struct {
     char *label;
-    // int oldNum;
     int newNum;
     int lineIdx;
     char *pos;       // pointer to start of citation in line '['
@@ -32,7 +30,7 @@ static char *my_strdup(const char *s) {
     size_t len = strlen(s) + 1;
     char *copy = malloc(len);
     if (copy) memcpy(copy, s, len);
-    return copy; // user will have to free
+    return copy; // caller will have to free
 }
 #define strdup my_strdup
 #endif
@@ -44,7 +42,7 @@ static char *my_strndup(const char *s, size_t n) {
         memcpy(copy, s, n);
         copy[n] = '\0';
     }
-    return copy; // user will have to free
+    return copy; // caller will have to free
 }
 #define strndup my_strndup
 #endif
@@ -74,39 +72,14 @@ int isInsideInlineCode(const char *line, const char *start, const char *end) {
     int cite_idx = (int)(start - line); // index of '[' for this citation [^citeNum]
     // scan left-to-right from beginning of line to just before '[' in [^citeNum]
     for (int i = 0; i < cite_idx - 1; i++) {
-	if (line[i] == '`' && line[i+1] == '`') {
-	    inCode = !inCode; // toggle
-	    i += 1; // skip next iteration
-	}
+	    if (line[i] == '`' && line[i+1] == '`') {
+	        inCode = !inCode; // toggle
+	        i += 1; // skip next iteration
+	    }
     }
     const char *p = strstr(end + 1, "``"); // find first occurrence of '``' after ']' in [^citeNum]
     if (inCode && p) return 1;
     else return 0;
-}
-
-// Find next citation in a line
-int findCitation(const char *line, const char **pos, int *num) {
-    const char *p;
-    if (!pos || *pos == NULL)
-        p = strstr(line, "[^"); // find first occurrence of '[^' starting from beginning of line
-    else
-        p = strstr(*pos, "[^"); // find first occurrence of '[^' start from given pos in line
-
-    if (!p) return 0;
-
-    char *end;
-    long n = strtol(p+2, &end, 10); // "p+2" skips past '[^'. "strol" reads as many digits as possible into n. "end" points to the first non-digit character
-    if (end && *end == ']') {
-	    if (isInsideInlineCode(line, p, end)) {
-	        return 0;
-	    } else {
-            *num = (int)n;
-            *pos = end + 1; // found a citation, move pointer to after the ']'
-            return 1;
-	    }
-    }
-    *pos = p + 2; // did not find a citation, move pointer 2 spaces after '[^'
-    return findCitation(line, pos, num);
 }
 
 int findInTextCitation(const char *line, const char **pos, char **label) {
@@ -131,8 +104,7 @@ int findInTextCitation(const char *line, const char **pos, char **label) {
     const char *finish = end - 1;
     while (finish >= start && isspace((unsigned char)*finish)) finish--; // trim trailing spaces
 
-    size_t len = finish - start + 1;
-    // if (len <= 0) return 0;
+    size_t len = finish - start + 1; // main() will handle case where len=0
 
     *label = strndup(start, len); // caller must free
     *pos = end + 1; // citation [^something] was found, move one space past ']'
@@ -170,13 +142,12 @@ int backScanForQuote(const char *line, int pos) {
         // check if hit a previous in-text citation before reaching a quote
    	    if (i > 2 && line[i] == ']') {
    	        if (isdigit((unsigned char)line[i - 1]) &&
-	    	line[i - 2] == '^' &&
-   	        	line[i - 3] == '[') {
-   	    	return -2;
+                line[i - 2] == '^' && line[i - 3] == '[') {
+   	    	    return -2;
    	        }
    	    }
         if (line[i] == '"') {
-	   return i;
+	        return i;
         }
     }
     // did not find '"' or '[^n]' in line
@@ -268,6 +239,7 @@ void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lin
         }
 
         if (count > 1) {
+            // --- stacked citation ---
             const int MAX_STACK = 16;
             int nums[MAX_STACK];
             char *q = stackStart;
@@ -436,8 +408,8 @@ int main(int argc, char **argv) {
     const char *filename = NULL;
 
     if (argc < 2) { 
-	printf("citeorder: missing operand\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n");
-	return 1;
+	    printf("citeorder: missing operand\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n");
+	    return 1;
     }
 
     if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
@@ -451,21 +423,20 @@ int main(int argc, char **argv) {
     }
 
     for (int i = 1; i < argc; i++) {
-	if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--relaxed-quotes") == 0) {
-	    relaxedQuotes = 1;
-	} else {
-	    filename = argv[i];
-	}
+	    if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--relaxed-quotes") == 0) {
+	        relaxedQuotes = 1;
+	    } else {
+	        filename = argv[i];
+	    }
     }
-
 
     FILE *f = fopen(filename, "r");
     if (!f) { 
-	// perror("fopen");
-	fprintf(stderr,
-		"citeorder: file '%s' does not exist\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n",
-		filename);
-	return 1;
+	    // perror("fopen");
+	    fprintf(stderr,
+		        "citeorder: file '%s' does not exist\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n",
+		        filename);
+	    return 1;
     }
 
     const char *lines[MAX_LINES]; // "lines" is a pointer to an array of const char pointers
@@ -488,12 +459,12 @@ int main(int argc, char **argv) {
 
     // Collect full-entry citations
     // ----------------------------
-    for (int i = 0; i < lineCount; i++){
-        if (strstr(lines[i], "]:") && !isCodeLine[i]){
+    for (int i = 0; i < lineCount; i++) {
+        if (strstr(lines[i], "]:") && !isCodeLine[i]) {
             char *label = NULL;
             const char *body;
-            if (findFullEntry(lines[i], &label, &body)){
-                // check if label has length<=0
+            if (findFullEntry(lines[i], &label, &body)) {
+                // check if label has length=0
                 if (strlen(label) == 0) {
                     fprintf(stderr, "ERROR: [^%s] full-entry citation missing label (line %d)\n",
                             label, i+1);
