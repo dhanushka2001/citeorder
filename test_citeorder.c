@@ -38,29 +38,29 @@ char* read_file(const char *filename) {
 // Helper to run citeorder and capture output
 // ------------------------------------------
 int run_citeorder(const char *flag,
-		  const char *inputFile,
-		  const char *stdoutFile,
-		  const char *stderrFile)
+		          const char *inputFile,
+		          const char *stdoutFile,
+		          const char *stderrFile)
 {
     char cmd[512];
 #ifdef _WIN32
     if (flag && flag[0] != '\0')
         snprintf(cmd, sizeof(cmd),
-	         "citeorder.exe %s \"%s\" 1>\"%s\" 2>\"%s\"",
-	         flag, inputFile, stdoutFile, stderrFile);
+	             "citeorder.exe %s \"%s\" 1>\"%s\" 2>\"%s\"",
+	             flag, inputFile, stdoutFile, stderrFile);
     else
         snprintf(cmd, sizeof(cmd),
-	         "citeorder.exe \"%s\" 1>\"%s\" 2>\"%s\"",
-	         inputFile, stdoutFile, stderrFile);
+	             "citeorder.exe \"%s\" 1>\"%s\" 2>\"%s\"",
+	             inputFile, stdoutFile, stderrFile);
 #else
     if (flag && flag[0] != '\0')
         snprintf(cmd, sizeof(cmd),
-	         "./citeorder %s \"%s\" 1>\"%s\" 2>\"%s\"",
-	         flag, inputFile, stdoutFile, stderrFile);
+	             "./citeorder %s \"%s\" 1>\"%s\" 2>\"%s\"",
+	             flag, inputFile, stdoutFile, stderrFile);
     else
         snprintf(cmd, sizeof(cmd),
-	         "./citeorder \"%s\" 1>\"%s\" 2>\"%s\"",
-	         inputFile, stdoutFile, stderrFile);
+	             "./citeorder \"%s\" 1>\"%s\" 2>\"%s\"",
+	             inputFile, stdoutFile, stderrFile);
 #endif
     return system(cmd);
 }
@@ -160,11 +160,11 @@ bool files_match(const char *actual_file, const char *expected_file, bool ignore
 // Run a single test case
 // ----------------------
 void run_test_case(const char *test_name,
-		   const char *flag,
-		   const char *inputFile,
-		   const char *expectedOutputFile,
+		           const char *flag,
+		           const char *inputFile,
+		           const char *expectedOutputFile,
                    const char *expectedStdoutFile,
-		   const char *expectedStderrFile)
+		           const char *expectedStderrFile)
 {
 
     printf("\nRunning test: %s\n", test_name);
@@ -185,42 +185,42 @@ void run_test_case(const char *test_name,
     char *error_message;
     if (expectedOutputFile && expectedStdoutFile) {
         if (!files_match(outFile, expectedOutputFile, 0)) {
-	    error_message = "FAIL: output file mismatch";
-	    printf("%s\n", error_message);
+	        error_message = "FAIL: output file mismatch";
+	        printf("%s\n", error_message);
             pass = false;
-	}
-	if (!files_match(outStd, expectedStdoutFile, 1)) {
-	    error_message = "FAIL: stdout file mismatch";
-	    printf("%s\n", error_message);
+	    }
+	    if (!files_match(outStd, expectedStdoutFile, 1)) {
+	        error_message = "FAIL: stdout file mismatch";
+	        printf("%s\n", error_message);
             pass = false;
-	}
-	test_case = 0;
+	    }
+	    test_case = 0;
     }  
     else if (expectedStdoutFile && !files_match(outStd, expectedStdoutFile, 0)) {
         error_message = "FAIL: stdout mismatch";
-	printf("%s\n", error_message);
+	    printf("%s\n", error_message);
         pass = false;
-	test_case = 1;
+	    test_case = 1;
     }
     else if (expectedStderrFile && !files_match(outErr, expectedStderrFile, 0)) {
         error_message = "FAIL: stderr mismatch";
-	printf("%s\n", error_message);
-	pass = false;
-	test_case = 2;
+	    printf("%s\n", error_message);
+	    pass = false;
+	    test_case = 2;
     }
 
     if (pass) {
         printf("PASS\n");
-	fprintf(junit, "  <testcase classname=\"citeorder\" name=\"%s\"/>\n", test_name);
+	    fprintf(junit, "  <testcase classname=\"citeorder\" name=\"%s\"/>\n", test_name);
     } else {
         printf("Input file: %s\n", inputFile);
-	if (test_case == 0) { printf("Check %s, %s for details\n", outFile, outStd); }
-	if (test_case == 1) { printf("Check %s for details\n", outStd); }
-	if (test_case == 2) { printf("Check %s for details\n", outErr); }
-	fprintf(junit, "  <testcase classname=\"citeorder\" name=\"%s\">\n", test_name);
+	    if (test_case == 0) { printf("Check %s, %s for details\n", outFile, outStd); }
+	    if (test_case == 1) { printf("Check %s for details\n", outStd); }
+	    if (test_case == 2) { printf("Check %s for details\n", outErr); }
+	    fprintf(junit, "  <testcase classname=\"citeorder\" name=\"%s\">\n", test_name);
     	fprintf(junit, "    <failure message=\"%s\">TBA</failure>\n", error_message);
-	fprintf(junit, "  </testcase>\n");
-	failures++;
+	    fprintf(junit, "  </testcase>\n");
+	    failures++;
     }
 }
 
@@ -231,7 +231,7 @@ int main() {
     if (!junit) return 1;
     long headerPos = ftell(junit);
     fprintf(junit, "<testsuite name=\"citeorder\" tests=\"%d\" failures=\"%s\">\n",
-	    total_tests, "F");
+	        total_tests, "F");
 
     // 1. No change required test
     run_test_case("no-change",
@@ -383,10 +383,14 @@ int main() {
     // --- go back and patch failures ---
     fseek(junit, headerPos, SEEK_SET);
     fprintf(junit, "<testsuite name=\"citeorder\" tests=\"%d\" failures=\"%d\">",
-	    total_tests, failures);
+	        total_tests, failures);
     
     fclose(junit);
-
-    return 0;
+    
+    printf("\nTotal tests: %d | Passed: %d | Failed: %d\n",
+           total_tests, total_tests-failures, failures);
+    
+    if (failures > 0) return 1;
+    else return 0;
 }
 

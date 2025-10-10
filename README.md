@@ -8,6 +8,11 @@
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/dhanushka2001/citeorder/total)](https://github.com/dhanushka2001/citeorder/releases)
 [![GitHub Repo stars](https://img.shields.io/github/stars/dhanushka2001/citeorder)](https://github.com/dhanushka2001/citeorder/stargazers)
 
+[![Windows](https://img.shields.io/badge/Windows-0078D6?style=plastic&logo=windows&logoColor=white)](https://github.com/dhanushka2001/citeorder/releases)
+[![macOS](https://img.shields.io/badge/macOS-000000?style=plastic&logo=macos&logoColor=F0F0F0)](https://github.com/dhanushka2001/citeorder/releases)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=plastic&logo=ubuntu&logoColor=white)](https://github.com/dhanushka2001/citeorder/releases)
+[![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?style=plastic&logo=arch-linux&logoColor=white)](https://github.com/dhanushka2001/citeorder/releases)
+
 ![C](https://img.shields.io/badge/C-%2300599C.svg?style=plastic&logo=c&logoColor=white)
 ![Markdown](https://img.shields.io/badge/Markdown-%23000000.svg?style=plastic&logo=markdown&logoColor=white)
 
@@ -26,9 +31,23 @@ In-text footnotes (``"Alice here",[^1]``) and full-entry footnotes (``[^1]: Alic
 
 ## How to use
 
-1. On Windows, simply download the precompiled executable from the latest [release](https://github.com/dhanushka2001/citeorder/releases).
+1. Download the precompiled executable for your OS from the latest [release](https://github.com/dhanushka2001/citeorder/releases.
 
-   Or, if you want to compile the source code yourself, clone the repo and compile ``citeorder.c``:
+   Installation via Homebrew (macOS/Ubuntu):
+
+   ```bash
+   brew install dhanushka2001/citeorder/citeorder
+   ```
+
+   Installation via the [AUR](https://aur.archlinux.org/packages/citeorder) (Arch):
+   
+   ```bash
+   yay -S citeorder
+   ```
+
+   <details><summary>Or clone the repo and compile source code</summary>
+
+   If you want to compile the source code yourself, clone the repo and compile ``citeorder.c``:
 
    ```console
    git clone https://github.com/dhanushka2001/citeorder
@@ -37,6 +56,9 @@ In-text footnotes (``"Alice here",[^1]``) and full-entry footnotes (``[^1]: Alic
    ```console
    gcc -Wall citeorder.c -o citeorder
    ```
+
+   </details>
+
 2. To run, simply enter into the terminal:
 
    ```console
@@ -115,7 +137,7 @@ Is "Ethan"[^5] here?
 
 * No changes needed.
 * Stacked in-text footnotes, e.g. ``"hello",[^3][^1][^5]`` → ``"hello",[^1][^2][^3]``.
-* Single punctuation (or none) after the quote, e.g. ``"A"[^3] "B",[^2] "C".[^6] "D"![^5]`` → ``"A"[^1] "B",[^2] "C".[^3] "D"![^4]``.
+* Single punctuation (or none) after end quote, e.g. ``"A"[^3] "B",[^2] "C".[^6] "D"![^5]`` → ``"A"[^1] "B",[^2] "C".[^3] "D"![^4]``.
 * Improper quote, e.g. ``"hello[^1]``, ``"hello",,[^1]``, ``hello"[^1]``, ``"hello" [^1]`` produces an error message like: ``ERROR: in-text citation [^1] not properly quoted (line 5)``. Can ignore this error with the ``-r``/``--relaxed-quotes`` flag.
 * Full-entry footnotes with no matching in-text footnotes simply get bubbled to the end of the ordering.
 * In-text footnotes with no matching full-entry footnote produce an error message like: ``ERROR: in-text citation [^2] without full-entry (line 3)``.
@@ -135,5 +157,5 @@ Is "Ethan"[^5] here?
 
   are ignored.
 * Footnote labels with letters/symbols are supported, and will be relabeled accordingly, e.g. ``"A"[^6b]`` → ``"A"[^1]``.
-* Spaces in the in-text or full-entry footnotes. Spaces outside the label for in-text footnotes, e.g. ``"A"[^  Alice ]`` is accepted by Markdown processors, and ``citeorder`` will convert that to ``"A"[^1]``. However, for full-entry footnotes, e.g. ``[^ 4b  ]: Alice`` it is not accepted, and in ``citeorder`` it will produce an error message like: ``ERROR: [^ 4b  ] full-entry citation contains a space (line 3)``. For both in-text and full-entry footnotes, spaces in the label itself, e.g. ``"A"[^4 b]``, ``[^4 b]: Alice``, are not accepted, and in ``citeorder`` you will get an error message.
-* In-text or full-entry footnote missing label, e.g. ``"A"[^]``, will produce an error message like: ``ERROR: in-text citation [^] missing label (line 7)``.
+* Spaces in the in-text or full-entry footnotes. Spaces outside the label for in-text footnotes, e.g. ``"A"[^  Alice ]`` are accepted by Markdown processors, and ``citeorder`` will convert that to ``"A"[^1]``. However, for full-entry footnotes, e.g. ``[^ 4b  ]: Alice``, it is not accepted, and in ``citeorder`` it will produce an error message like: ``ERROR: [^ 4b  ] full-entry citation contains a space (line 3)``. For both in-text and full-entry footnotes, spaces **in** the label itself, e.g. ``"A"[^4 b]``, ``[^4 b]: Alice``, are not accepted, and in ``citeorder`` you will get an error message.
+* In-text or full-entry footnote missing a label, e.g. ``"A"[^]``, will produce an error message like: ``ERROR: in-text citation [^] missing label (line 7)``.
