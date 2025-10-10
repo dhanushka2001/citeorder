@@ -31,7 +31,7 @@ In-text footnotes (``"Alice here",[^1]``) and full-entry footnotes (``[^1]: Alic
 
 ## How to use
 
-1. Download the precompiled executable for your OS from the latest [release](https://github.com/dhanushka2001/citeorder/releases.
+1. Download the precompiled executable from the latest [release](https://github.com/dhanushka2001/citeorder/releases).
 
    Installation via Homebrew (macOS/Ubuntu):
 

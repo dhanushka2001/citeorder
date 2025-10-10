@@ -601,7 +601,7 @@ int main(int argc, char **argv) {
     for (int j = 0; j < fullCount; j++) {
         if (fullEntries[j].newNum == 0) {
             fullEntries[j].newNum = fullCount - numUnusedFullEntry + k;
-	    k++;
+	        k++;
         }
     }
 
