@@ -115,6 +115,12 @@ int findInTextCitation(const char *line, const char **pos, char **label) {
 // returns 1 if a valid full-entry footnote is found, else 0
 int findFullEntry(const char *line, char **label, const char **body) {
     // must start with '[^', thus don't need to worry about being inside inline code
+
+    // skip leading spaces
+    while (*line && isspace((unsigned char)*line)) {
+        line++;
+    }
+
     if (strncmp(line, "[^", 2) != 0) return 0;
 
     const char *p = line + 2; // skip "[^"
@@ -373,7 +379,7 @@ void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lin
 }
 
 void print_version(void) {
-    printf("  citeorder 1.1 (GPL-3.0-or-later)\n");
+    printf("  citeorder 1.1.2 (GPL-3.0-or-later)\n");
     printf("  Copyright (C) 2025 Dhanushka Jayagoda\n");
 #if defined(__clang__)
     printf("  Built with clang %s\n", __clang_version__);

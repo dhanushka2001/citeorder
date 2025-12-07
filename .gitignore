@@ -21,6 +21,8 @@ test2-fixed.md
 issues.txt
 citeorder-1.1-linux/
 
+tests/no-change-fixed.md
+tests/spaced-quote-fixed.md
 tests/full-entry-fixed.md
 tests/inline-code-fixed.md
 tests/stacked-fixed.md

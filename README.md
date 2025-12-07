@@ -159,3 +159,38 @@ Is "Ethan"[^5] here?
 * Footnote labels with letters/symbols are supported, and will be relabeled accordingly, e.g. ``"A"[^6b]`` → ``"A"[^1]``.
 * Spaces in the in-text or full-entry footnotes. Spaces outside the label for in-text footnotes, e.g. ``"A"[^  Alice ]`` are accepted by Markdown processors, and ``citeorder`` will convert that to ``"A"[^1]``. However, for full-entry footnotes, e.g. ``[^ 4b  ]: Alice``, it is not accepted, and in ``citeorder`` it will produce an error message like: ``ERROR: [^ 4b  ] full-entry citation contains a space (line 3)``. For both in-text and full-entry footnotes, spaces **in** the label itself, e.g. ``"A"[^4 b]``, ``[^4 b]: Alice``, are not accepted, and in ``citeorder`` you will get an error message.
 * In-text or full-entry footnote missing a label, e.g. ``"A"[^]``, will produce an error message like: ``ERROR: in-text citation [^] missing label (line 7)``.
+* Multiline quote: 
+
+  ```md
+  "T"[^4]
+  
+  "This quote takes
+  
+  up multiple lines
+  
+  but is still valid",[^3]
+  
+  "H",[^6]
+  
+  [^4]: T
+  [^6]: H
+  [^3]: Multiline quote
+  ```
+
+  becomes:
+
+  ```md
+  "T"[^1]
+  
+  "This quote takes
+  
+  up multiple lines
+  
+  but is still valid",[^2]
+  
+  "H",[^3]
+  
+  [^1]: T
+  [^2]: Multiline quote
+  [^3]: H
+  ```
