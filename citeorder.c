@@ -379,7 +379,7 @@ void updateLineInTexts(char *line, InText *inTexts, int inCount, int lineIdx) {
 }
 
 void print_version(void) {
-    printf("  citeorder 1.2.0 (GPL-3.0-or-later)\n");
+    printf("  citeorder 1.2.1 (GPL-3.0-or-later)\n");
     printf("  Copyright (c) 2025 Dhanushka Jayagoda\n");
 #if defined(__clang__)
     printf("  Built with clang %s\n", __clang_version__);
