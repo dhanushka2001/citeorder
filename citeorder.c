@@ -5,8 +5,8 @@
 #include <string.h>
 #include <limits.h>
 
-#define MAX_LINES 10000
-#define MAX_ENTRIES 1000
+#define MAX_LINES 5000
+#define MAX_ENTRIES 200
 #define MAX_LINE_LEN 1024
 
 typedef struct {
@@ -22,7 +22,7 @@ typedef struct {
     int lineIdx;
     char *pos;       // pointer to start of citation in line '['
     FullEntry *ref;
-} InTextCitation;
+} InText;
 
 /* Define my own strdup and strndup functions */
 #ifndef HAVE_STRDUP
@@ -50,15 +50,15 @@ static char *my_strndup(const char *s, size_t n) {
 void markCodeBlocks(const char **lines, int lineCount, int *isCodeLine) {
     int insideFence = 0;
     for (int i = 0; i < lineCount; i++) {
-	const char *line = lines[i];
-
-	// skip leading spaces
-	while (*line && isspace((unsigned char)*line)) {
-	    line++;
-	}
+	    const char *line = lines[i];
+    
+	    // skip leading spaces
+	    while (*line && isspace((unsigned char)*line)) {
+	        line++;
+	    }
 
         if (strncmp(line, "```", 3) == 0) {
-            insideFence = !insideFence;
+            insideFence = insideFence == 0 ? 1 : 0; // toggle
             isCodeLine[i] = 1; // mark fence line as code
         } else {
             isCodeLine[i] = insideFence;
@@ -66,7 +66,7 @@ void markCodeBlocks(const char **lines, int lineCount, int *isCodeLine) {
     }
 }
 
-// Check if a given portion of a line is inside inline code
+// Check if a given portion of a line (e.g. '[^footnote]') is inside inline code: start='[', end=']'
 int isInsideInlineCode(const char *line, const char *start, const char *end) {
     bool inCode = 0;
     int cite_idx = (int)(start - line); // index of '[' for this citation [^citeNum]
@@ -82,7 +82,7 @@ int isInsideInlineCode(const char *line, const char *start, const char *end) {
     else return 0;
 }
 
-int findInTextCitation(const char *line, const char **pos, char **label) {
+int findInText(const char *line, const char **pos, char **label) {
     const char *p;
     if (!pos || *pos == NULL)
         p = strstr(line, "[^");
@@ -164,7 +164,7 @@ int backScanForQuote(const char *line, int pos) {
 int hasProperQuoteContext(const char **lines, int lineNum, const char *pos) {
     const char *line = lines[lineNum];
     
-    // pos given from findInTextCitation(), the position after ']' in [^citeNum]
+    // pos given from findInText(), the position after ']' in [^citeNum]
     int q = (int)(pos - line);
     // search backwards from ']' to have q point to '['
     while (q > 0) {
@@ -228,7 +228,7 @@ int hasProperQuoteContext(const char **lines, int lineNum, const char *pos) {
 }
 
 // Update in-text citations in a line, keeping stacked citations sorted
-void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lineIdx) {
+void updateLineInTexts(char *line, InText *inTexts, int inCount, int lineIdx) {
     char *p = line;
     // recursively search for start of footnotes (single or stacked)
     while ((p = strstr(p, "[^")) != NULL) {
@@ -379,8 +379,8 @@ void updateLineInTexts(char *line, InTextCitation *inTexts, int inCount, int lin
 }
 
 void print_version(void) {
-    printf("  citeorder 1.1.2 (GPL-3.0-or-later)\n");
-    printf("  Copyright (C) 2025 Dhanushka Jayagoda\n");
+    printf("  citeorder 1.2.0 (GPL-3.0-or-later)\n");
+    printf("  Copyright (c) 2025 Dhanushka Jayagoda\n");
 #if defined(__clang__)
     printf("  Built with clang %s\n", __clang_version__);
 #elif defined(__GNUC__)
@@ -397,14 +397,15 @@ void print_version(void) {
 void print_help(void) {
     printf("citeorder - reorder Markdown footnotes\n\n");
     printf("Usage:\n");
-    printf("  citeorder [-r|--relaxed-quotes] input.md\n\n");
+    printf("  citeorder [options] input.md\n\n");
     printf("Description:\n");
     printf("  Processes a Markdown file and reorders its footnotes.\n");
     printf("  The result is written to 'input-fixed.md'.\n\n");
     printf("Options:\n");
-    printf("  -r, --relaxed-quotes   Allow relaxed handling of quotation marks\n");
-    printf("  -h, --help             Show this help message\n");
-    printf("  -v, --version          Show program version\n\n");
+    printf("  -q, --relaxed-quotes       Relaxed handling of quotation marks\n");
+    printf("  -d, --relaxed-duplicates   Relaxed handling of duplicate footnotes (auto-increment)\n");
+    printf("  -h, --help                 Show this help message\n");
+    printf("  -v, --version              Show program version\n\n");
     printf("Version:\n");
     print_version();
 }
@@ -426,38 +427,65 @@ bool entryChanged(const char *label, int newNum) {
     return !isNumeric(label) || strcmp(label, numStr) != 0;
 }
 
+void cleanup(const char **lines, int lineCount, FullEntry *fullEntries, InText *inTexts, int fullCount, int inCount) {
+    for (int i = 0; i < lineCount; i++) {
+        if(lines[i] != NULL) {
+            // Cast away the 'const' qualifier to satisfy free() function signature
+            free((char *)lines[i]);
+            lines[i] = NULL; // optional, good practice
+        }
+    }
+    // No need to free(lines) because the array itself is on the stack.
+    
+    for (int i = 0; i < fullCount; i++) {
+        if (fullEntries[i].label != NULL) {
+            free(fullEntries[i].label);
+            fullEntries[i].label == NULL;
+        }
+    }
+    for (int i = 0; i < inCount; i++) {
+        if (inTexts[i].label != NULL) {
+            free(inTexts[i].label);
+            inTexts[i].label == NULL;
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     int relaxedQuotes = 0;
+    int incrementDuplicates = 0;
+    int num_dup_full_entry = 0;
+    const char *dup_full_entry = NULL;
+    int num_dup_in_text = 0;
     const char *filename = NULL;
 
     if (argc < 2) { 
-	    printf("citeorder: missing operand\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n");
+	    printf("citeorder: missing operand\nUsage: 'citeorder [options] input.md'\nHelp: 'citeorder [-h|--help]'\n");
 	    return 1;
     }
 
-    if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        print_help();
-        return 0;
-    }
-
-    if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
-        print_version();
-        return 0;
-    }
 
     for (int i = 1; i < argc; i++) {
-	    if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--relaxed-quotes") == 0) {
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            print_help();
+            return 0;
+        } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
+            print_version();
+            return 0;
+        } else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--relaxed-quotes") == 0) {
 	        relaxedQuotes = 1;
+        } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--relaxed-duplicates") == 0) {
+            incrementDuplicates = 1;
 	    } else {
 	        filename = argv[i];
 	    }
     }
-
+    
     FILE *f = fopen(filename, "r");
     if (!f) { 
 	    // perror("fopen");
 	    fprintf(stderr,
-		        "citeorder: file '%s' does not exist\nUsage: 'citeorder [-r|--relaxed-quotes] input.md'\nHelp: 'citeorder [-h|--help]'\n",
+		        "citeorder: file '%s' does not exist\nUsage: 'citeorder [options] input.md'\nHelp: 'citeorder [-h|--help]'\n",
 		        filename);
 	    return 1;
     }
@@ -476,8 +504,10 @@ int main(int argc, char **argv) {
     markCodeBlocks(lines, lineCount, isCodeLine);
 
     FullEntry fullEntries[MAX_ENTRIES];
+    // FullEntry *fullEntries = malloc(MAX_ENTRIES * sizeof(FullEntry));
     int fullCount = 0;
-    InTextCitation inTexts[MAX_ENTRIES*2];
+    InText inTexts[MAX_ENTRIES*2];
+    // InText *inTexts = malloc(MAX_ENTRIES * sizeof(InTexts));
     int inCount = 0;
 
     // Collect full-entry citations
@@ -491,6 +521,7 @@ int main(int argc, char **argv) {
                 if (strlen(label) == 0) {
                     fprintf(stderr, "ERROR: [^%s] full-entry citation missing label (line %d)\n",
                             label, i+1);
+                    cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
                     return 1;
                 }
                 // check if label contains any spaces
@@ -498,30 +529,67 @@ int main(int argc, char **argv) {
                     if (isspace(label[k])) {
                         fprintf(stderr, "ERROR: [^%s] full-entry citation contains a space (line %d)\n",
                                 label, i+1);
+                        cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
                         return 1;
                     }
                 }
-                // check duplicates
-                for (int j = 0; j < fullCount; j++){
+                // loop through current list of full-entries to check if duplicate
+                for (int j = 0; j < fullCount; j++) {
                     if (strcmp(fullEntries[j].label, label) == 0) {
-                        fprintf(stderr,"ERROR: duplicate [^%s] full-entry citations (line %d and %d)\n",
-                                label, fullEntries[j].lineIdx+1, i+1);
-                        // cleanup
-                        for (int k = 0; k < fullCount; k++) {
-                            free(fullEntries[k].label);
+                        // ONE duplicate allowed
+                        if (incrementDuplicates) {
+                            // first duplicate found
+                            if (dup_full_entry == NULL) {
+                                dup_full_entry = strdup(label);
+                                num_dup_full_entry = 2;
+                                // printf("First full-entry dupe found, line %d\n",
+                                //         i+1);
+                                // printf("num_dup_full_entry = %d\n",
+                                //         num_dup_full_entry);
+                            // first duplicate previously found already
+                            } else {
+                                // this duplicate is DIFFERENT from first duplicate found
+                                if (strcmp(label, dup_full_entry) != 0) {
+                                    fprintf(stderr,"ERROR: relaxed-duplicates (-d) mode allows only ONE full-entry duplicate (found: [^%s] and [^%s] duplicates)\n",
+                                            dup_full_entry, label);
+                                    cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
+                                    return 1;
+                                // this duplicate is the SAME as first duplicate found
+                                } else {
+                                    num_dup_full_entry++;
+                                    // printf("Dupe found, line %d\n",
+                                    //         i+1);
+                                    // printf("num_dup_full_entry = %d\n",
+                                    //         num_dup_full_entry);
+                                    break;
+                                }
+                            }
+                        // NO duplicates allowed
+                        } else {
+                            fprintf(stderr,"ERROR: duplicate [^%s] full-entry citations (line %d and %d)\n",
+                                    label, fullEntries[j].lineIdx+1, i+1);
+                            printf("Help: Use the '-d' flag to relax duplicate handling. Run 'citeorder -h' for more info\n");
+                            cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
+                            return 1;
                         }
-                        free(label);
-                        exit(1);
                     }
                 }
+
                 fullEntries[fullCount].label    = label;    // store strndup'd label
                 fullEntries[fullCount].lineIdx  = i;
                 fullEntries[fullCount].text     = lines[i];
                 fullEntries[fullCount].newNum   = 0;        // assign later
                 fullCount++;
+                
+                // printf("Line %d: New full_entry: {label: %s, line: %d, newNum: %d}\n",
+                //         i+1,
+                //         fullEntries[fullCount-1].label,
+                //         fullEntries[fullCount-1].lineIdx,
+                //         fullEntries[fullCount-1].newNum);
             }
         }
     }
+    // printf("FINISHED COLLECTING FULL-ENTRIES.\n");
 
     // Collect in-text citations and assign sequential new numbers
     // -----------------------------------------------------------
@@ -533,11 +601,12 @@ int main(int argc, char **argv) {
         char *label = NULL;
         
         // recursively check lines[i] for in-text footnotes
-        while (findInTextCitation(lines[i], &pos, &label)){
+        while (findInText(lines[i], &pos, &label)){
             // check if label has length<=0
             if (strlen(label) == 0) {
                 fprintf(stderr, "ERROR: in-text citation [^%s] missing label (line %d)\n",
                         label, i+1);
+                cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
                 return 1;
             }
             // check if label contains any spaces
@@ -545,44 +614,57 @@ int main(int argc, char **argv) {
                 if (isspace(label[k])) {
                     fprintf(stderr, "ERROR: in-text citation [^%s] contains a space (line %d)\n",
                             label, i+1);
+                    cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
+                    return 1;
+                }
+            }
+            // check if in-text matches duplicate full-entry
+            if (incrementDuplicates) {
+                if (strcmp(label, dup_full_entry) == 0) {
+                    num_dup_in_text++;
+                    // printf("num_dup_in_text = %d, line: %d\n",
+                    //         num_dup_in_text, i+1);
+                }
+                // check if number of duplicate in-texts > number of duplicate full-entries
+                if (num_dup_in_text > num_dup_full_entry) {
+                    fprintf(stderr,"ERROR: relaxed-duplicates (-d) mode expects EQUAL number of full-entry and in-text duplicates (found: %d [^%s] full-entries, %d [^%s] in-texts)\n",
+                            num_dup_full_entry, label, num_dup_in_text, label);
+                    cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
                     return 1;
                 }
             }
             // find the corresponding full entry
             FullEntry *entry=NULL;
-            for (int j = 0; j < fullCount; j++){
-                if(strcmp(fullEntries[j].label, label) == 0){
+            for (int j = 0; j < fullCount; j++) {
+                if(strcmp(fullEntries[j].label, label) == 0) {
                     entry = &fullEntries[j];
-                    break;
+                    // skip if duplicates allowed and matched full-entry already assigned
+                    if (incrementDuplicates && entry->newNum != 0) {
+                        // printf("Full-entry on line %d already assigned\n",
+                        //         entry->lineIdx + 1);
+                        continue;
+                    } else {
+                        break;
+                    }
                 }
             }
             if(!entry) {
                 fprintf(stderr,"ERROR: in-text citation [^%s] without full-entry (line %d)\n", label, i+1);
                 // cleanup
-                for (int k = 0; k < inCount; k++) {
-                    free(inTexts[k].label);
-                }
-                for (int j = 0; j < fullCount; j++) {
-                    free(fullEntries[j].label);
-                }
-                exit(1);
+                cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
+                return 1;
             }
 	        if (!relaxedQuotes) {
                 if(!hasProperQuoteContext(lines, i, pos)) {
                     fprintf(stderr,"ERROR: in-text citation [^%s] not properly quoted (line %d)\n", label, i+1);
-                    printf("Help: Use the '-r' flag to relax quote handling. Run 'citeorder -h' for more info\n");
-                // cleanup
-                for (int k = 0; k < inCount; k++) {
-                    free(inTexts[k].label);
-                }
-                for (int j = 0; j < fullCount; j++) {
-                    free(fullEntries[j].label);
-                }
-                    exit(1);
+                    printf("Help: Use the '-q' flag to relax quote handling. Run 'citeorder -h' for more info\n");
+                    // cleanup
+                    cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
+                    return 1;
 		        }
             }
 
-            // assign a new number if not already assigned
+            // assign matching full-entry the next number if not already assigned
             if(entry->newNum == 0){
                 entry->newNum = nextNum++;
             }
@@ -592,16 +674,34 @@ int main(int argc, char **argv) {
             inTexts[inCount].lineIdx    = i;
             inTexts[inCount].ref        = entry;
             inCount++;
+            
+            // printf("Line %d: New in_text: {label: %s, line: %d, newNum: %d}\n",
+            //         i+1,
+            //         inTexts[inCount-1].label,
+            //         inTexts[inCount-1].lineIdx,
+            //         inTexts[inCount-1].newNum);
+            // printf("Matching full-entry: {label: %s, line: %d, newNum: %d}\n",
+            //         entry->label,
+            //         entry->lineIdx,
+            //         entry->newNum);
         }
+    }
+    // printf("FINISHED COLLECTING IN-TEXTS.\n");
+    // check if number of duplicate in-texts < number of duplicate full-entries
+    if (num_dup_in_text < num_dup_full_entry) {
+        fprintf(stderr,"ERROR: relaxed-duplicates (-d) mode expects EQUAL number of full-entry and in-text duplicates (found: %d [^%s] full-entries, %d [^%s] in-texts)\n",
+                num_dup_full_entry, dup_full_entry, num_dup_in_text, dup_full_entry);
+        cleanup(lines, lineCount, fullEntries, inTexts, fullCount, inCount);
+        return 1;
     }
 
     // Unused fullEntries get bubbled to the top
     // -----------------------------------------
     int numUnusedFullEntry = 0;
     for (int i = 0; i < fullCount; i++) {
-	if (fullEntries[i].newNum == 0) {
-	    numUnusedFullEntry++;
-	}
+	    if (fullEntries[i].newNum == 0) {
+	        numUnusedFullEntry++;
+	    }
     }
     int k = 1;
     for (int j = 0; j < fullCount; j++) {
@@ -626,7 +726,7 @@ int main(int argc, char **argv) {
             break;
         }
     }
-    
+    // printf("Ready for outputting...\n");
     // Output to new file
     // ------------------
     if (changed) {
@@ -643,8 +743,17 @@ int main(int argc, char **argv) {
         
         // Update lines
 	    int i = 0;
+        int dup_count = 0;
         while (i < lineCount){
-            if (!strstr(lines[i], "]:")) {
+            // inside code block?
+            if (isCodeLine[i]) {
+           	    // char *lineCopy = strdup(lines[i]);
+                // fputs(lineCopy, out);
+                // free(lineCopy);
+                fputs(lines[i], out);
+                i++;
+                continue; 
+            } else if (!strstr(lines[i], "]:")) {
     	    	// --- in-text line ---
            	    char *lineCopy = strdup(lines[i]);
            	    updateLineInTexts(lineCopy, inTexts, inCount, i);
@@ -653,26 +762,65 @@ int main(int argc, char **argv) {
     		    i++;
             } else {
                 // --- full entry line ---
+                // inside code block?
+                // if (isCodeLine[i]) {
+                //     fputs(lines[i], out);
+                //     i++;
+                //     continue; 
+                // }
+                const char *p = strstr(lines[i], "[^");
+                if (!p) {
+                    fputs(lines[i], out);
+                    i++;
+                    continue;
+                }
+                const char *q = strstr(p + 2, "]");
+                if (!q) {
+                    fputs(lines[i], out);
+                    i++;
+                    continue;
+                }
+                if (isInsideInlineCode(lines[i], p, q)) {
+                    fputs(lines[i], out);
+                    i++;
+                    continue;
+                }
+
                 int start = i;
                 int end = i;
-                while (end + 1 < lineCount && strstr(lines[end + 1], "]:")) {
+                char *label;
+                const char *body;
+                while (end < lineCount - 1 && findFullEntry(lines[end+1], &label, &body)) {
                     end++;
                 }
             
                 // Collect block entries
                 int blockSize = end - start + 1;
+                // printf("blockSize = %d\n", blockSize);
                 FullEntry **block = malloc(blockSize * sizeof(*block));
                 int k = 0;
+                int dup_skip = 0;
                 for (int j = start; j <= end; j++) {
-                    char *label;
-                    const char *body;
+                    // find full-entry
                     if (findFullEntry(lines[j], &label, &body)) {
+                        // find matching full-entry in fullEntries
                         for (int fe = 0; fe < fullCount; fe++) {
                             if (strcmp(fullEntries[fe].label, label) == 0) {
-                                block[k++] = &fullEntries[fe];
-                                break;
+                                if (incrementDuplicates && strcmp(label, dup_full_entry) == 0) {
+                                    if (dup_skip == 0) {
+                                        dup_count++;
+                                        dup_skip = dup_count - 1;
+                                    } else {
+                                        dup_skip--;
+                                    }
+                                }
+                                if (!incrementDuplicates || dup_skip == 0) {
+                                    block[k++] = &fullEntries[fe];
+                                    break;
+                                }
                             }
                         }
+                        free(label);
                     }
                 }
             
@@ -699,6 +847,13 @@ int main(int argc, char **argv) {
                     char newMarker[32];
                     snprintf(newMarker, sizeof(newMarker), "[^%d]:", fe->newNum);
             
+                    // add leading spaces
+                    int piv=0;
+                    while (isspace((unsigned char)*(orig+piv))) {
+                        piv++;
+                        fputs(" ", out);
+                    }
+
                     // Print new marker + remainder of original line (after the ':')
                     fputs(newMarker, out);
                     fputs(colon + 1, out);

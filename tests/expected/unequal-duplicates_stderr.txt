@@ -1,0 +1,1 @@
+ERROR: relaxed-duplicates (-d) mode expects EQUAL number of full-entry and in-text duplicates (found: 6 [^footnote-X] full-entries, 5 [^footnote-X] in-texts)

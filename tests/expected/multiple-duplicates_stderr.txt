@@ -1,0 +1,1 @@
+ERROR: relaxed-duplicates (-d) mode allows only ONE full-entry duplicate (found: [^footnote-X] and [^1] duplicates)

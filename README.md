@@ -70,7 +70,7 @@ In-text footnotes (``"Alice here",[^1]``) and full-entry footnotes (``[^1]: Alic
    To allow relaxed quote handling, do:
 
    ```console
-   citeorder -r input.md
+   citeorder -q input.md
    ```
 
    For more info and options, run:
@@ -153,6 +153,9 @@ Is "Ethan"[^5] here?
 
   ```md
   "A"[^1]
+
+  [^1]: A
+  [^2]: B
   ```
 
   are ignored.
@@ -193,4 +196,37 @@ Is "Ethan"[^5] here?
   [^1]: T
   [^2]: Multiline quote
   [^3]: H
+  ```
+* Duplicate full-entry footnotes, e.g.
+
+  ```md
+  "A"[^dupe], "B"[^dupe]
+
+  [^dupe]: A
+  [^dupe]: B
+
+  "C"[^dupe]
+
+  [^dupe]: C
+
+  "D"[^1]
+
+  [^1]: D
+  ```
+
+  can be auto-incremented using the ``-d``/``--relaxed-duplicates`` flag (must be only ONE duplicate footnote label, and must have an equal number of full-entry and in-text duplicates):
+
+  ```md
+  "A"[^1], "B"[^2]
+
+  [^1]: A
+  [^2]: B
+
+  "C"[^3]
+
+  [^3]: C
+
+  "D"[^4]
+
+  [^4]: D
   ```

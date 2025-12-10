@@ -226,7 +226,7 @@ void run_test_case(const char *test_name,
 
 // Example test cases
 int main() {
-    int total_tests = 18;
+    int total_tests = 22;
     junit = fopen("results.xml", "w");
     if (!junit) return 1;
     long headerPos = ftell(junit);
@@ -323,7 +323,7 @@ int main() {
     );
     // 12. Relaxed quotes example
     run_test_case("relaxed-quotes",
-		          "-r",					                       // flag
+		          "-q",					                       // flag
                   "tests/relaxed-quotes.md",                   // input file
                   "tests/expected/relaxed-quotes-fixed.md",    // expected output file
                   "tests/expected/relaxed-quotes_stdout.txt",  // expected stdout
@@ -369,7 +369,39 @@ int main() {
                   NULL,					                            // expected stdout
                   "tests/expected/missing-label-intext_stderr.txt"  // expected stderr
     );
-    // 18. Real example
+    // 18. Relaxed duplicates
+    run_test_case("relaxed-duplicates",
+		          "-d",					                            // flag
+                  "tests/relaxed-duplicates.md",                    // input file
+                  "tests/expected/relaxed-duplicates-fixed.md",     // expected output file
+                  "tests/expected/relaxed-duplicates_stdout.txt",   // expected stdout
+                  NULL                                              // expected stderr
+    );
+    // 19. Multiple duplicates
+    run_test_case("multiple-duplicates",
+		          "-d",					                            // flag
+                  "tests/multiple-duplicates.md",                   // input file
+                  NULL,				                                // expected output file
+                  NULL,					                            // expected stdout
+                  "tests/expected/multiple-duplicates_stderr.txt"   // expected stderr
+    );
+    // 20. Unequal duplicates
+    run_test_case("unequal-duplicates",
+		          "-d",					                            // flag
+                  "tests/unequal-duplicates.md",                    // input file
+                  NULL,				                                // expected output file
+                  NULL,					                            // expected stdout
+                  "tests/expected/unequal-duplicates_stderr.txt"    // expected stderr
+    );
+    // 21. Code block
+    run_test_case("code-block",
+		          NULL,					                       // flag
+                  "tests/code-block.md",                       // input file
+                  "tests/expected/code-block-fixed.md",        // expected output file
+                  "tests/expected/code-block_stdout.txt",      // expected stdout
+                  NULL                                         // expected stderr
+    );
+    // 22. Real example
     run_test_case("real-example",
 		          NULL,					                       // flag
                   "tests/real-example.md",                     // input file

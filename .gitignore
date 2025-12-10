@@ -18,7 +18,15 @@ test1-fixed.md
 test2.md
 test2-fixed.md
 
+test3.md
+test3-fixed.md
+
+duplicate-full-entry.md
+duplicate-full-entry-fixed.md
+
 issues.txt
+to-do-list.txt
+release-checklist.txt
 citeorder-1.1-linux/
 
 tests/no-change-fixed.md
@@ -32,5 +40,7 @@ tests/fenced-code-fixed.md
 tests/multiline-quote-fixed.md
 tests/relaxed-quotes-fixed.md
 tests/string-cite-fixed.md
+tests/relaxed-duplicates-fixed.md
+tests/code-block-fixed.md
 
 results.xml
