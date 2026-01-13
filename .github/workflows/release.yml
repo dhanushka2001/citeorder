@@ -99,8 +99,72 @@ jobs:
             citeorder-*.zip
             citeorder-*.tar.gz
 
-  release:
+
+  build-wasm:
+    name: Build WASM (Emscripten)
     needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Extract version from tag
+      - name: Extract version
+        id: get_version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      # 3. Install Emscripten
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      # 4. Verify emcc
+      - name: Verify emcc
+        run: emcc --version
+
+      # 5. Build WASM
+      - name: Build citeorder WASM
+        run: |
+          mkdir wasm
+          emcc citeorder.c \
+            -O3 \
+            -s WASM=1 \
+            -s MODULARIZE=1 \
+            -s EXPORT_NAME=CiteorderModule \
+            -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' \
+            -s ALLOW_MEMORY_GROWTH=1 \
+            -s INITIAL_MEMORY=16777216 \
+            -s ENVIRONMENT=web \
+            -s EXPORT_ES6=0 \
+            -s SINGLE_FILE=0 \
+            -s ASSERTIONS=1 \
+            -o wasm/citeorder.js
+
+      # 6. Package WASM zip
+      - name: Package WASM
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          mkdir package
+          cp wasm/citeorder.js wasm/citeorder.wasm package/
+          cp LICENSE README.md package/
+          cd package
+          zip -9 ../citeorder-wasm-${VERSION}.zip *
+
+      # 7. Upload WASM artifact
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: citeorder-wasm
+          path: citeorder-wasm-*.zip
+
+
+  release:
+    needs:
+      - build-and-test
+      - build-wasm
     runs-on: ubuntu-latest
 
     steps:
@@ -118,7 +182,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ./artifacts/citeorder-*/*.zip,./artifacts/citeorder-*/*.tar.gz
+          files: |
+            ./artifacts/citeorder-*/*.zip
+            ./artifacts/citeorder-*/*.tar.gz
+            ./artifacts/citeorder-wasm/*.zip
           tag_name: ${{ github.ref_name }}
           body: "Automated release of citeorder ${{ github.ref_name }}."
           overwrite_files: true
