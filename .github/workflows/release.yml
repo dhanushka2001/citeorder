@@ -183,10 +183,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./artifacts/citeorder-Ubuntu/*.tar.gz
-            ./artifacts/citeorder-macOS/*.tar.gz
-            ./artifacts/citeorder-Windows/*.zip
-            ./artifacts/citeorder-wasm/*.zip
+            ./artifacts/citeorder-*/*.tar.gz
+            ./artifacts/citeorder-*/*.zip
           tag_name: ${{ github.ref_name }}
           body: "Automated release of citeorder ${{ github.ref_name }}."
           overwrite_files: true
