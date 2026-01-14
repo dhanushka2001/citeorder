@@ -191,11 +191,58 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'test') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      # 4. Notify extension repo
+
+
+  notify-extension:
+    name: Notify citeorder-github
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ github.event.release.prerelease == false }} # only stable release
+    steps:
       - name: Notify extension repo
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CITEORDER_EXTENSION_TOKEN }}
           repository: dhanushka2001/citeorder-github
           event-type: citeorder-release
+
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ github.event.release.prerelease == false }} # only stable release
+    steps:
+      - name: Checkout homebrew-citeorder
+        uses: actions/checkout@v4
+        with:
+          repository: dhanushka2001/homebrew-citeorder
+          ref: main
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }} # PAT with repo write permissions
+          path: homebrew-citeorder
+
+      - name: Update Formula
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          TAR_URL="https://github.com/dhanushka2001/citeorder/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz"
+          echo "Downloading tarball to calculate SHA256..."
+          curl -L -o /tmp/citeorder.tar.gz "$TAR_URL"
+          SHA256=$(sha256sum /tmp/citeorder.tar.gz | awk '{print $1}')
+          echo "SHA256=$SHA256"
+
+          FORMULA_FILE="homebrew-citeorder/Formula/citeorder.rb"
+
+          # Update URL
+          sed -i "s|^  url .*|  url \"$TAR_URL\"|" "$FORMULA_FILE"
+
+          # Update SHA256
+          sed -i "s|^  sha256 .*|  sha256 \"$SHA256\"|" "$FORMULA_FILE"
+
+          # Commit and push changes
+          cd homebrew-citeorder
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add Formula/citeorder.rb
+          git commit -m "Update formula to citeorder $VERSION"
+          git push origin main
