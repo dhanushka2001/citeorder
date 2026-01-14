@@ -197,5 +197,5 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CITEORDER_EXTENSION_TOKEN }}
-          repository: your-username/citeorder-github
+          repository: dhanushka2001/citeorder-github
           event-type: citeorder-release
