@@ -188,8 +188,10 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body: "Automated release of citeorder ${{ github.ref_name }}."
           overwrite_files: true
+          prerelease: ${{ contains(github.ref_name, 'test') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
       # 4. Notify extension repo
       - name: Notify extension repo
         uses: peter-evans/repository-dispatch@v3
