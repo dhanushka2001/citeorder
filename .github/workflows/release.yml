@@ -5,11 +5,9 @@ permissions:
   contents: write  # needed to create releases and upload release assets
 
 on:
-  release:
-    types: [published] # triggers only when a release is published
-  # push:
-  #   tags:
-  #     - "v*"  # triggers on version tags like v1.0
+  push:
+    tags:
+      - "v*"  # triggers on version tags like v1.0
 
 jobs:
   build-and-test:
@@ -190,7 +188,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body: "Automated release of citeorder ${{ github.ref_name }}."
           overwrite_files: true
-          prerelease: ${{ contains(github.ref_name, 'test') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          prerelease: ${{ contains(github.ref_name, 'test') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -199,7 +197,7 @@ jobs:
     name: Notify citeorder-github
     needs: release
     runs-on: ubuntu-latest
-    if: ${{ github.event.release.prerelease == false }} # only stable release
+    if: ${{ !contains(github.ref_name, 'test') }} # only stable release
     steps:
       - name: Notify extension repo
         uses: peter-evans/repository-dispatch@v3
@@ -213,7 +211,7 @@ jobs:
     name: Update Homebrew Formula
     needs: release
     runs-on: ubuntu-latest
-    if: ${{ github.event.release.prerelease == false }} # only stable release
+    if: ${{ !contains(github.ref_name, 'test') }} # only stable release
     steps:
       - name: Checkout homebrew-citeorder
         uses: actions/checkout@v4
