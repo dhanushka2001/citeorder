@@ -190,3 +190,10 @@ jobs:
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 4. Notify extension repo
+      - name: Notify extension repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CITEORDER_EXTENSION_TOKEN }}
+          repository: your-username/citeorder-github
+          event-type: citeorder-release
