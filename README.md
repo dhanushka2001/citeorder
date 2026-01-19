@@ -23,6 +23,8 @@
 
 Simple command-line tool to correctly reorder Footnotes in Markdown files.
 
+For those who don't wish to use the command-line, I have made a [Chrome Extension](https://github.com/dhanushka2001/citeorder-github) which adds a toolbar inside GitHub's README.md text editor with a button to reorder footnotes.
+
 ## Motivation
 
 Markdown processors that support footnotes (e.g. [GitHub’s Markdown engine](https://github.com/github/cmark-gfm), which implements the [GitHub Flavored Markdown](https://github.github.com/gfm) spec) automatically reorder footnotes when converting ``.md`` files to HTML. However, ``citeorder`` fixes the ordering in the ``.md`` file itself, making it neater and easier to manage lots of footnotes. Especially useful when needing to add new footnotes in the middle of a long ``.md`` file and not having to spend ages reordering every in-text and full-entry footnote manually (🥲).
