@@ -36,7 +36,7 @@ In-text footnotes (``"Alice here",[^1]``) and full-entry footnotes (``[^1]: Alic
 
 1. Download the precompiled executable from the latest [release](https://github.com/dhanushka2001/citeorder/releases).
 
-   Installation via Homebrew (macOS/Ubuntu):
+   Installation via [Homebrew](https://github.com/dhanushka2001/homebrew-citeorder) (macOS/Ubuntu):
 
    ```bash
    brew install dhanushka2001/citeorder/citeorder
