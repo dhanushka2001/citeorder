@@ -23,7 +23,8 @@
 
 Simple command-line tool to correctly reorder Footnotes in Markdown files.
 
-For those who don't wish to use the command-line, I have made a [Chrome Extension](https://github.com/dhanushka2001/citeorder-github) which adds a toolbar inside GitHub's README.md text editor with a button to reorder footnotes.
+> [!TIP] 
+> For those who don't wish to use the command-line, I have made a [Chrome Extension](https://github.com/dhanushka2001/citeorder-github) which adds a toolbar inside GitHub's README.md text editor with a button to reorder footnotes.
 
 ## Motivation
 
@@ -140,7 +141,7 @@ Is "Ethan"[^5] here?
 * No changes needed.
 * Stacked in-text footnotes, e.g. ``"hello",[^3][^1][^5]`` → ``"hello",[^1][^2][^3]``.
 * Single punctuation (or none) after end quote, e.g. ``"A"[^3] "B",[^2] "C".[^6] "D"![^5]`` → ``"A"[^1] "B",[^2] "C".[^3] "D"![^4]``.
-* Improper quote, e.g. ``"hello[^1]``, ``"hello",,[^1]``, ``hello"[^1]``, ``"hello" [^1]`` produces an error message like: ``ERROR: in-text citation [^1] not properly quoted (line 5)``. Can ignore this error with the ``-r``/``--relaxed-quotes`` flag.
+* Improper quote, e.g. ``"hello[^1]``, ``"hello",,[^1]``, ``hello"[^1]``, ``"hello" [^1]`` produces an error message like: ``ERROR: in-text citation [^1] not properly quoted (line 5)``. Can ignore this error with the ``-q``/``--relaxed-quotes`` flag.
 * Full-entry footnotes with no matching in-text footnotes simply get bubbled to the end of the ordering.
 * In-text footnotes with no matching full-entry footnote produce an error message like: ``ERROR: in-text citation [^2] without full-entry (line 3)``.
 * Duplicate full-entry footnotes, e.g.
