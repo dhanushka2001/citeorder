@@ -1,4 +1,9 @@
+
+<img width="480" alt="citeorder-logo-transparent-2" src="https://github.com/user-attachments/assets/e8efb661-cbe4-48bb-9a9d-5512cc6fd10d" />
+
+<!--
 <img width="640" height="320" alt="citeorder-logo-light" src="https://github.com/user-attachments/assets/21bdb71e-fbe1-4c4b-8f8d-5cd2d4f1fca7" />
+-->
 
 # citeorder
 [![Build and Test](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml/badge.svg)](https://github.com/dhanushka2001/citeorder/actions/workflows/main.yml)
