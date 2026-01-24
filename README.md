@@ -1,5 +1,4 @@
 ![Logo](https://github.com/user-attachments/assets/43f400c2-ba67-45a9-b196-53757bf9931b#gh-dark-mode-only)
-
 ![Logo](https://github.com/user-attachments/assets/4c8496ca-0ed2-4e2f-9ddb-ccb54cc7d0ad#gh-light-mode-only)
 
 # citeorder
@@ -59,7 +58,7 @@ In-text footnotes (``"Alice here",[^1]``) and full-entry footnotes (``[^1]: Alic
    ```
    
    ```console
-   gcc -Wall citeorder.c -o citeorder
+   gcc -Wall -O2 citeorder.c -o citeorder
    ```
 
    </details>
